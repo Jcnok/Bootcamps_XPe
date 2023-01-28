@@ -1,0 +1,13 @@
+{
+    "Id": ObjectId("8a3ce16dbaa9c725a5bd315f"),
+    "cnpj": "92-381-499-0001-01",
+    "fornecedor": "Lorem",
+    "data_emissao": ISODate("2016-04-08T15:06:21.595Z"),
+    "valor_total": "$7.47",
+    "itens": {
+        "valor": "$6.60",
+        "nome": "Lorem",
+        "quantidade": 187,
+        "descricao": "Lorem"
+    }
+}

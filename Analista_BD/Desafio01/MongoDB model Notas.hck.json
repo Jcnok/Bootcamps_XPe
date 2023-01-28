@@ -1,0 +1,279 @@
+{
+    "modelName": "Notas",
+    "collections": [
+        {
+            "collectionName": "cadastro_nf",
+            "type": "object",
+            "properties": [
+                {
+                    "name": "Id",
+                    "hackoladeMeta": {},
+                    "isActivated": true,
+                    "type": "objectId",
+                    "GUID": "25c6bb40-92d5-48dd-a62a-57a908d35437",
+                    "error": {}
+                },
+                {
+                    "name": "cnpj",
+                    "hackoladeMeta": {},
+                    "isActivated": true,
+                    "type": "string",
+                    "GUID": "24ae6495-f3da-4383-adc8-72ba1940e17a",
+                    "required": true,
+                    "fakerFunction": "faker.finance.creditCardNumber('##-###-###-0001-##')",
+                    "error": {}
+                },
+                {
+                    "name": "fornecedor",
+                    "hackoladeMeta": {},
+                    "isActivated": true,
+                    "type": "string",
+                    "GUID": "e99917ea-e1b2-4b0d-a02e-4f6f6c662b5b",
+                    "required": true,
+                    "error": {}
+                },
+                {
+                    "name": "data_emissao",
+                    "hackoladeMeta": {},
+                    "isActivated": true,
+                    "type": "date",
+                    "primaryKey": false,
+                    "GUID": "4e3ace63-775a-489a-92a5-12dcab0b84db",
+                    "required": true,
+                    "error": {}
+                },
+                {
+                    "name": "valor_total",
+                    "hackoladeMeta": {},
+                    "isActivated": true,
+                    "type": "string",
+                    "GUID": "7448bfa4-e577-4225-9891-9dd7e7bfb220",
+                    "fakerFunction": "faker.finance.amount(5, 10, 2, '$')",
+                    "error": {}
+                },
+                {
+                    "name": "itens",
+                    "hackoladeMeta": {},
+                    "isActivated": true,
+                    "type": "document",
+                    "properties": [
+                        {
+                            "name": "valor",
+                            "hackoladeMeta": {},
+                            "isActivated": true,
+                            "type": "string",
+                            "GUID": "304bb89e-3120-4765-88d7-59639361b4de",
+                            "fakerFunction": "faker.finance.amount(5, 10, 2, '$')",
+                            "error": {}
+                        },
+                        {
+                            "name": "nome",
+                            "hackoladeMeta": {},
+                            "isActivated": true,
+                            "type": "string",
+                            "GUID": "1451f6ef-8307-4a95-b528-6ceb67d17cc1",
+                            "error": {}
+                        },
+                        {
+                            "name": "quantidade",
+                            "hackoladeMeta": {},
+                            "isActivated": true,
+                            "type": "numeric",
+                            "GUID": "cf98b34f-edcf-4bd9-b987-96e0cddeac1c",
+                            "minimum": 0,
+                            "maximum": 999,
+                            "error": {}
+                        },
+                        {
+                            "name": "descricao",
+                            "hackoladeMeta": {},
+                            "isActivated": true,
+                            "type": "string",
+                            "GUID": "3149f9a3-174b-4311-b249-02c04d10a987",
+                            "error": {}
+                        }
+                    ],
+                    "additionalProperties": false,
+                    "GUID": "883a6076-d43f-47f7-a3f5-d34e11bb65e5",
+                    "required": true,
+                    "error": {}
+                }
+            ],
+            "definitions": {
+                "type": "definitions",
+                "properties": [],
+                "GUID": "ddc55213-0b13-4840-ac6f-3b2ae7a67144"
+            },
+            "isActivated": true,
+            "additionalProperties": false,
+            "validationLevel": "Off",
+            "validationAction": "Warn",
+            "storageEngineName": "WiredTiger",
+            "collectionUsers": [],
+            "indexes": [
+                {
+                    "GUID": "a7875733-9839-4745-b832-2fb18e0c127b",
+                    "name": "New Index",
+                    "isActivated": true,
+                    "key": [
+                        {
+                            "keyId": "1451f6ef-8307-4a95-b528-6ceb67d17cc1",
+                            "type": "ascending"
+                        },
+                        {
+                            "keyId": "3149f9a3-174b-4311-b249-02c04d10a987",
+                            "type": "ascending"
+                        }
+                    ],
+                    "unique": false,
+                    "dropDups": false,
+                    "sparse": false,
+                    "expireAfterSeconds": "",
+                    "background": false,
+                    "weights": "",
+                    "min": -180,
+                    "max": 180,
+                    "bits": 26,
+                    "language_override": "language",
+                    "storageEngineName": "WiredTiger",
+                    "collation": {}
+                }
+            ],
+            "collation": {},
+            "sharding": {
+                "unique": true,
+                "collation": "null"
+            },
+            "GUID": "6f4d5226-8998-48bf-a533-158bb44e81aa",
+            "bucketId": "4e33f9fa-c3d9-4d3e-b11b-8778f236bbe9",
+            "error": {}
+        }
+    ],
+    "buckets": [
+        {
+            "name": "NF",
+            "type": "bucket",
+            "collectionIds": [
+                "6f4d5226-8998-48bf-a533-158bb44e81aa"
+            ],
+            "backgroundColor": {
+                "r": 63,
+                "g": 81,
+                "b": 181,
+                "a": 1
+            },
+            "show": true,
+            "isActivated": true,
+            "GUID": "4e33f9fa-c3d9-4d3e-b11b-8778f236bbe9"
+        }
+    ],
+    "views": [],
+    "relationships": [],
+    "users": [],
+    "diagramViews": [],
+    "idToNameHashTable": {
+        "4e33f9fa-c3d9-4d3e-b11b-8778f236bbe9": "NF",
+        "6f4d5226-8998-48bf-a533-158bb44e81aa": "cadastro_nf",
+        "24ae6495-f3da-4383-adc8-72ba1940e17a": "cnpj",
+        "e99917ea-e1b2-4b0d-a02e-4f6f6c662b5b": "fornecedor",
+        "4e3ace63-775a-489a-92a5-12dcab0b84db": "data_emissao",
+        "7448bfa4-e577-4225-9891-9dd7e7bfb220": "valor_total",
+        "883a6076-d43f-47f7-a3f5-d34e11bb65e5": "itens",
+        "1451f6ef-8307-4a95-b528-6ceb67d17cc1": "nome",
+        "304bb89e-3120-4765-88d7-59639361b4de": "valor",
+        "cf98b34f-edcf-4bd9-b987-96e0cddeac1c": "quantidade",
+        "3149f9a3-174b-4311-b249-02c04d10a987": "descricao",
+        "25c6bb40-92d5-48dd-a62a-57a908d35437": "Id"
+    },
+    "definitions": {
+        "type": "definitions",
+        "properties": [],
+        "GUID": "531acfe2-736e-4fa2-aff4-8aae412fa2bf"
+    },
+    "polyglotDefinitions": {
+        "type": "polyglotDefinitions",
+        "properties": [],
+        "GUID": "a11f882e-a098-4227-b9ac-0127045217d5"
+    },
+    "externalDefinitions": {
+        "type": "externalDefinitions",
+        "properties": [],
+        "GUID": "74b14cf2-293d-4f83-bb09-6008a165106f"
+    },
+    "sources": [],
+    "decorativeSymbols": [],
+    "dbVersion": "v4.2",
+    "dbVendor": "MongoDB",
+    "appTarget": "MONGODB",
+    "creationTS": "2023-01-27T19:09:37.553Z",
+    "GUID": "3cf1c687-ac22-4926-bbb0-d0150ec99073",
+    "isLineageEnabled": false,
+    "hackoladeMeta": {
+        "validationErrors": {
+            "modelName": false
+        }
+    },
+    "lastModifTS": "2023-01-27T19:54:56.589Z",
+    "persistenceSchemaVersion": "6",
+    "isCreatedByPlugin": true,
+    "pluginInformation": {
+        "pluginEngineVersion": "1.0.0"
+    },
+    "applicationInformation": {
+        "version": "6.8.4"
+    },
+    "settings": {
+        "centralPane": {
+            "dbLevel": {
+                "erd": [
+                    {
+                        "GUID": "6f4d5226-8998-48bf-a533-158bb44e81aa",
+                        "x": 125,
+                        "y": 249,
+                        "width": 269,
+                        "height": 301,
+                        "color": {}
+                    }
+                ],
+                "erdDefinitions": {
+                    "erd": [],
+                    "rootPath": [],
+                    "entities": [],
+                    "decorativeSymbols": []
+                },
+                "buckets": [
+                    {
+                        "x": 85,
+                        "y": 209,
+                        "GUID": "4e33f9fa-c3d9-4d3e-b11b-8778f236bbe9"
+                    }
+                ],
+                "collapsedNodes": [],
+                "activeRelationship": "",
+                "activeRelationshipFields": {
+                    "childField": [],
+                    "parentField": []
+                },
+                "selectedCollections": [],
+                "displayColorPicker": false,
+                "graphView": {
+                    "erd": [],
+                    "buckets": [],
+                    "decorativeSymbols": [],
+                    "forceLayout": true,
+                    "defaultLinkLength": 300
+                },
+                "diagramViews": [],
+                "decorativeSymbols": [],
+                "nestedCollectionsLayout": "horizontal",
+                "options": []
+            },
+            "collectionLevel": {},
+            "changed": false
+        },
+        "dtDiagram": {
+            "collapsedNodes": [],
+            "shouldDistributeCollections": false
+        }
+    }
+}
