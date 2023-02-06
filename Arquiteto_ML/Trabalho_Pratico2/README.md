@@ -1,0 +1,526 @@
+# NLP -  ATIVIDADE PRÁTICA  - CLASSIFICAÇÃO DE TEXTO USANDO MACHINE LEARNING
+
+Nesta prática iremos classificar um texto a partir de algoritmos de classificação e implementar um Random Forest. Para resolução do problema de classificação, passaremos por algumas etapas, conforme discutido em nossos estudos.
+
+## O que é classificação de texto?
+A Classificação de Texto é um processo automatizado de classificação em categorias predefinidas. Podemos classificar e-mails em spam ou não spam, artigos de notícias em diferentes categorias, como política, mercado de ações, esportes, etc.
+
+Isso pode ser feito com a ajuda de Processamento de Linguagem Natural e diferentes Algoritmos de Classificação como Naive Bayes, SVM e até Redes Neurais em Python.
+
+Usaremos o conjunto de dados de reviews da Amazon que possui 10.000 linhas de dados de texto classificados em “Rótulo 1” e “Rótulo 2”. O conjunto de dados tem duas colunas “Texto” e “Rótulo”. Você pode baixar os dados em https://raw.githubusercontent.com/Gunjitbedi/Text-Classification/master/corpus.csv .
+
+# Importar bibliotecas
+
+
+
+```python
+import pandas as pd
+import numpy as np
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk import pos_tag
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from sklearn.preprocessing import LabelEncoder
+from collections import defaultdict
+from nltk.corpus import wordnet as wn
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn import model_selection, naive_bayes, svm
+from sklearn.ensemble import RandomForestClassifier
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+
+from sklearn.metrics import accuracy_score
+""" 
+PERGUNTA 1 
+Insira os modulos do NLTK para fazer download
+"""
+### SEU CODIGO AQUI ###
+
+nltk.download('punkt')
+nltk.download('wordnet')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('stopwords')
+```
+
+    [nltk_data] Downloading package punkt to
+    [nltk_data]     C:\Users\Julio\AppData\Roaming\nltk_data...
+    [nltk_data]   Package punkt is already up-to-date!
+    [nltk_data] Downloading package wordnet to
+    [nltk_data]     C:\Users\Julio\AppData\Roaming\nltk_data...
+    [nltk_data]   Package wordnet is already up-to-date!
+    [nltk_data] Downloading package averaged_perceptron_tagger to
+    [nltk_data]     C:\Users\Julio\AppData\Roaming\nltk_data...
+    [nltk_data]   Package averaged_perceptron_tagger is already up-to-
+    [nltk_data]       date!
+    [nltk_data] Downloading package stopwords to
+    [nltk_data]     C:\Users\Julio\AppData\Roaming\nltk_data...
+    [nltk_data]   Package stopwords is already up-to-date!
+    
+
+
+
+
+    True
+
+
+
+## Definir sementes aleatórias
+
+Isso é usado para reproduzir o mesmo resultado todas as vezes se o script for mantido consistente, caso contrário, cada execução produzirá resultados diferentes. A semente pode ser definida para qualquer número.
+
+
+```python
+""" 
+PERGUNTA 2 
+A definição de sementes aleatórias pode ser definida pelo seguinte código
+"""
+### SEU CODIGO AQUI ###
+np.random.seed(500)
+```
+
+## Adicionando o corpus
+
+
+```python
+# Mount your drive and past the correct path for read ther corpus
+'''
+OBS: Você deve conectar o Notebook ao seu drive pessoal e indicar o caminho correto para acesso ao dataset corpus.csv
+'''
+### SEU CODIGO AQUI ###
+Corpus = pd.read_csv(r"./corpus.csv",encoding='latin-1')
+```
+
+
+```python
+""" 
+PERGUNTA 3
+Qual o tipo de dados da variável Corpus criada?
+"""
+### SEU CODIGO AQUI ###
+type(Corpus)
+```
+
+
+
+
+    pandas.core.frame.DataFrame
+
+
+
+
+```python
+Corpus.head()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>text</th>
+      <th>label</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Stuning even for the non-gamer: This sound tr...</td>
+      <td>__label__2</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>The best soundtrack ever to anything.: I'm re...</td>
+      <td>__label__2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Amazing!: This soundtrack is my favorite musi...</td>
+      <td>__label__2</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Excellent Soundtrack: I truly like this sound...</td>
+      <td>__label__2</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Remember, Pull Your Jaw Off The Floor After H...</td>
+      <td>__label__2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+## Pre processamento
+Transformar dados brutos em um formato compreensível para modelos de PLN. Os dados do mundo real geralmente são incompletos, inconsistentes e provavelmente contêm muitos erros. O pré-processamento de dados é um método comprovado de resolver esses problemas. Isso ajudará na obtenção de melhores resultados por meio dos algoritmos de classificação.
+
+
+```python
+"""
+PERGUNTA 4
+Para remover linhas em brancos se houver, usamos o seguinte trecho de codigo:
+"""
+# Step - a: Remove blank rows if any.
+### SEU CODIGO AQUI ###
+Corpus['text'].dropna(inplace=True)
+
+"""
+PERGUNTA 5
+Para passar todo o texto para letras minusculas, usamos o seguinte trecho de codigo:
+"""
+# Step - b : Change all the text to lower case. This is required as python interprets 'dog' and 'DOG' differently
+### SEU CODIGO AQUI ###
+Corpus['text'] = [entry.lower() for entry in Corpus['text']]
+
+"""
+PERGUNTA 6
+Para quebrar o corpus em um conjunto de palavras, usamos o seguinte trecho de código:
+"""
+# Step - c : Tokenization : In this each entry in the corpus will be broken into set of words
+### SEU CODIGO AQUI ###
+Corpus['text'] = [word_tokenize(entry) for entry in Corpus['text']]
+
+# Step - d : Remove Stop words, Non-Numeric and perfom Word Stemming/Lemmenting.
+# WordNetLemmatizer requires Pos tags to understand if the word is noun or verb or adjective etc. By default it is set to Noun
+"""
+PERGUNTA 7
+Para fazermos o mapa de taggeamento das palavras em Adjetivo, Verbo e Adverbio, usamos o seguinte trecho de código:
+"""
+### SEU CODIGO AQUI ###
+tag_map = defaultdict(lambda : wn.NOUN)
+tag_map['J'] = wn.ADJ
+tag_map['V'] = wn.VERB
+tag_map['R'] = wn.ADV
+
+
+for index,entry in enumerate(Corpus['text']):
+    # Declaring Empty List to store the words that follow the rules for this step
+    Final_words = []
+    # Initializing WordNetLemmatizer()
+    """
+    PERGUNTA 8
+    Para iniciar o WordNet lemmatizer, usamos o seguinte trecho de código:
+    """
+    ### SEU CODIGO AQUI ###
+    word_Lemmatized = WordNetLemmatizer()
+    
+    
+    # pos_tag function below will provide the 'tag' i.e if the word is Noun(N) or Verb(V) or something else.
+    for word, tag in pos_tag(entry):
+        # Below condition is to check for Stop words and consider only alphabets
+        if word not in stopwords.words('english') and word.isalpha():
+            word_Final = word_Lemmatized.lemmatize(word,tag_map[tag[0]])
+            Final_words.append(word_Final)
+    # The final processed set of words for each iteration will be stored in 'text_final'
+    Corpus.loc[index,'text_final'] = str(Final_words)
+```
+
+## Preparar o conjunto de treino e teste
+
+
+```python
+"""
+PERGUNTA 9
+Para separar o conjunto entre treino e teste com 70% para treino e 30% para teste, usamos o seguinte trecho de código:
+"""
+Train_X, Test_X, Train_Y, Test_Y = model_selection.train_test_split(Corpus['text_final'], Corpus['label'], test_size=0.2)
+### SEU CODIGO AQUI ###
+```
+
+## Codificação
+Codificar rótulos (labels) na variável de destino — Isso é feito para transformar dados categóricos do tipo string no conjunto de dados em valores numéricos que o modelo pode entender.
+
+
+```python
+"""
+PERGUNTA 10
+Para transformar dados categóricos do tipo string no conjunto de dados em valores numéricos que o modelo pode entender,
+usamos o seguinte trecho de código:
+"""
+### SEU CODIGO AQUI ###
+Encoder = LabelEncoder()
+Train_Y = Encoder.fit_transform(Train_Y)
+Test_Y = Encoder.fit_transform(Test_Y)
+```
+
+## Vetorização de palavras
+É um processo geral de transformar uma coleção de documentos de texto em vetores de recursos numéricos. Existem muitos métodos para converter dados de texto em vetores que o modelo pode entender, mas de longe o método mais popular é chamado TF-IDF. Este é um acrônimo que significa “Frequência de Termo – Documento Inverso” Frequência que são os componentes das pontuações resultantes atribuídas a cada palavra.
+
+> **Term Frequency:** resume a frequência com que uma determinada palavra aparece em um documento.
+
+> **Inverse Document Frequency:** Isso reduz as palavras que aparecem muito nos documentos.
+
+Sem entrar na matemática, TF-IDF são pontuações de frequência de palavras que tentam destacar palavras que são mais interessantes, por exemplo, frequentes em um documento, mas não em todos os documentos.
+
+A sintaxe a seguir pode ser usada para ajustar primeiro o modelo TF-IDF em todo o corpus. Isso ajudará o TF-IDF a construir um vocabulário de palavras que aprendeu com os dados do corpus e atribuirá um número inteiro único a cada uma dessas palavras. Serão no máximo 5000 palavras/características únicas, pois definimos o parâmetro max_features=5000.
+
+Finalmente vamos transformar Train_X e Test_X para Train_X_Tfidf vetorizado e Test_X_Tfidf . Estes agora conterão para cada linha uma lista de números inteiros exclusivos e sua importância associada conforme calculado pelo TF-IDF.
+
+
+```python
+"""
+PERGUNTA 10
+Ao utilizar o TF-IDF, com o tamanho máximo do vocabulário definido em 5000, qual trecho de código devemos utilizar?
+"""
+### SEU CODIGO AQUI ###
+Tfidf_vect = TfidfVectorizer(max_features=5000)
+Tfidf_vect.fit(Corpus['text_final'])
+Train_X_Tfidf = Tfidf_vect.transform(Train_X)
+Test_X_Tfidf = Tfidf_vect.transform(Test_X)
+```
+
+Para ver o vocabulário aprendido com o Corpus
+
+
+```python
+'''
+PERGUNTA 11 
+Para sabermos qual o vocabulário aprendido pelo Corpus, usamos usamos o seguinte trecho de código:
+O que esse vocabulário representa e qual é o seu tipo?
+'''
+### SEU CODIGO AQUI ###
+print(Tfidf_vect.vocabulary_)
+```
+
+    {'stun': 4279, 'even': 1525, 'sound': 4131, 'track': 4559, 'beautiful': 385, 'paint': 3167, 'mind': 2838, 'well': 4865, 'would': 4952, 'recomend': 3605, 'people': 3236, 'hate': 2054, 'video': 4768, 'game': 1870, 'music': 2930, 'play': 3310, 'cross': 1024, 'ever': 1529, 'best': 427, 'back': 328, 'away': 318, 'crude': 1027, 'take': 4374, 'fresh': 1830, 'step': 4219, 'guitar': 2004, 'orchestra': 3104, 'impress': 2246, 'anyone': 203, 'care': 645, 'listen': 2617, 'soundtrack': 4132, 'anything': 204, 'read': 3571, 'lot': 2661, 'review': 3722, 'say': 3842, 'figure': 1699, 'write': 4958, 'disagree': 1231, 'bit': 449, 'ultimate': 4636, 'masterpiece': 2753, 'timeless': 4506, 'year': 4977, 'beauty': 387, 'simply': 4019, 'refuse': 3629, 'price': 3416, 'tag': 4373, 'pretty': 3411, 'must': 2936, 'go': 1932, 'buy': 604, 'cd': 676, 'much': 2920, 'money': 2877, 'one': 3082, 'feel': 1675, 'worth': 4948, 'every': 1531, 'penny': 3235, 'amaze': 153, 'favorite': 1663, 'time': 4505, 'hand': 2024, 'intense': 2331, 'sadness': 3808, 'fate': 1658, 'mean': 2770, 'hope': 2153, 'distant': 1270, 'promise': 3456, 'girl': 1916, 'steal': 4213, 'star': 4200, 'important': 2243, 'inspiration': 2307, 'personally': 3255, 'throughout': 4487, 'teen': 4403, 'high': 2109, 'energy': 1461, 'like': 2593, 'trigger': 4595, 'absolutely': 7, 'superb': 4322, 'amazing': 154, 'probably': 3434, 'composer': 880, 'work': 4936, 'hear': 2071, 'ca': 609, 'sure': 4335, 'never': 2981, 'twice': 4623, 'wish': 4916, 'could': 973, 'give': 1918, 'excellent': 1557, 'truly': 4607, 'enjoy': 1471, 'disk': 1257, 'scar': 3847, 'life': 2583, 'death': 1093, 'ancient': 173, 'dragon': 1318, 'lose': 2657, 'drown': 1339, 'two': 4627, 'home': 2141, 'girlfriend': 1917, 'three': 4483, 'garden': 1880, 'god': 1934, 'sea': 3887, 'burn': 594, 'prayer': 3381, 'tower': 4554, 'radical': 3534, 'bring': 550, 'remember': 3663, 'pull': 3488, 'jaw': 2405, 'floor': 1755, 'know': 2488, 'single': 4028, 'song': 4113, 'tell': 4408, 'story': 4246, 'good': 1940, 'great': 1972, 'without': 4920, 'doubt': 1306, 'magical': 2697, 'wind': 4903, 'jewel': 2419, 'translation': 4574, 'perfect': 3242, 'ask': 263, 'pour': 3370, 'heart': 2074, 'paper': 3177, 'absolute': 6, 'quite': 3522, 'actually': 48, 'least': 2551, 'heard': 2072, 'whether': 4876, 'aware': 317, 'contribute': 939, 'greatly': 1973, 'mood': 2889, 'minute': 2849, 'whole': 4884, 'exact': 1547, 'count': 975, 'remarkable': 3661, 'assure': 273, 'forget': 1788, 'everything': 1536, 'listener': 2619, 'dance': 1066, 'slow': 4072, 'haunting': 2057, 'purely': 3499, 'beautifully': 386, 'compose': 879, 'fantastic': 1645, 'vocal': 4798, 'surely': 4336, 'buyer': 605, 'beware': 430, 'book': 491, 'want': 4820, 'paragraph': 3183, 'family': 1640, 'friend': 1834, 'perhaps': 3248, 'imagine': 2231, 'thing': 4466, 'spend': 4158, 'evening': 1526, 'piece': 3283, 'another': 193, 'definitely': 1122, 'bad': 333, 'enough': 1477, 'enter': 1479, 'kind': 2472, 'contest': 931, 'believe': 407, 'amazon': 156, 'sell': 3911, 'maybe': 2764, 'offer': 3068, 'grade': 1955, 'term': 4425, 'kill': 2469, 'anyway': 206, 'unless': 4680, 'send': 3913, 'someone': 4106, 'joke': 2433, 'far': 1647, 'glorious': 1926, 'love': 2666, 'wicked': 4887, 'saint': 3813, 'pleasantly': 3317, 'surprise': 4342, 'change': 702, 'romance': 3769, 'novel': 3033, 'world': 4942, 'rave': 3566, 'brilliant': 548, 'true': 4605, 'wonderful': 4929, 'typical': 4629, 'crime': 1012, 'becuase': 391, 'miss': 2857, 'warm': 4822, 'five': 1734, 'finish': 1715, 'fell': 1678, 'expect': 1581, 'average': 310, 'instead': 2318, 'find': 1711, 'think': 4467, 'predict': 3388, 'outcome': 3126, 'shock': 3979, 'descriptive': 1164, 'break': 531, 'julia': 2443, 'felt': 1681, 'reader': 3573, 'lover': 2670, 'let': 2571, 'cover': 986, 'fool': 1778, 'spectacular': 4153, 'easy': 1383, 'make': 2706, 'keep': 2459, 'reading': 3575, 'put': 3505, 'leave': 2553, 'follow': 1772, 'come': 835, 'soon': 4117, 'use': 4714, 'get': 1907, 'enjoyable': 1472, 'complete': 871, 'waste': 4836, 'error': 1505, 'poor': 3342, 'grammar': 1960, 'totally': 4546, 'pathetic': 3209, 'plot': 3322, 'add': 55, 'nothing': 3029, 'embarrass': 1435, 'author': 302, 'disappointed': 1235, 'pay': 3218, 'fast': 1654, 'boy': 517, 'twist': 4625, 'turn': 4616, 'guess': 1996, 'happen': 2030, 'next': 2989, 'fall': 1636, 'heat': 2076, 'also': 142, 'several': 3941, 'emotion': 1440, 'quick': 3515, 'something': 4107, 'end': 1456, 'day': 1084, 'night': 2998, 'yet': 4985, 'realistic': 3580, 'show': 3992, 'human': 2186, 'fact': 1621, 'writer': 4960, 'loving': 2671, 'side': 4000, 'glass': 1921, 'castle': 663, 'oh': 3074, 'please': 3318, 'others': 3121, 'drivel': 1336, 'trouble': 4603, 'typo': 4631, 'feature': 1667, 'first': 1726, 'page': 3163, 'remove': 3671, 'wait': 4811, 'point': 3331, 'beginning': 400, 'clear': 787, 'intentional': 2334, 'prose': 3470, 'purpose': 3502, 'glad': 1919, 'awful': 321, 'beyond': 431, 'belief': 405, 'seem': 3904, 'grader': 1956, 'skill': 4046, 'age': 97, 'reviewer': 3723, 'per': 3238, 'chapter': 705, 'example': 1552, 'mention': 2803, 'lean': 2547, 'house': 2174, 'distract': 1273, 'writing': 4961, 'weak': 4847, 'decide': 1102, 'pencil': 3233, 'mark': 2733, 'horrible': 2159, 'relative': 3645, 'faith': 1633, 'try': 4610, 'fake': 1635, 'obvious': 3052, 'glow': 1929, 'person': 3252, 'sentence': 3921, 'structure': 4271, 'romantic': 3770, 'zen': 4994, 'baseball': 355, 'comedy': 837, 'folk': 1771, 'anymore': 202, 'might': 2826, 'talk': 4378, 'cool': 956, 'young': 4990, 'search': 3891, 'stumble': 4278, 'resort': 3701, 'kitchen': 2480, 'gig': 1914, 'motorcycle': 2907, 'man': 2712, 'italian': 2384, 'right': 3743, 'team': 4395, 'owner': 3155, 'often': 3073, 'case': 658, 'honest': 2146, 'comical': 844, 'always': 150, 'emotional': 1441, 'interaction': 2336, 'player': 3313, 'mix': 2862, 'special': 4149, 'effect': 1403, 'salsa': 3816, 'big': 435, 'compression': 884, 'stocking': 4237, 'doctor': 1284, 'require': 3692, 'wear': 4851, 'ugly': 4634, 'white': 4881, 'hose': 2166, 'thick': 4462, 'brown': 560, 'jobst': 2426, 'need': 2968, 'look': 2651, 'regular': 3637, 'though': 4477, 'blood': 469, 'still': 4230, 'support': 4329, 'leg': 2556, 'nice': 2990, 'note': 3028, 'problem': 3436, 'top': 4537, 'roll': 3765, 'thigh': 4464, 'hat': 2053, 'skin': 4048, 'inexpensive': 2282, 'belt': 416, 'fine': 1713, 'help': 2089, 'product': 3441, 'however': 2178, 'difficult': 1212, 'old': 3078, 'full': 1849, 'workout': 4941, 'begin': 397, 'create': 1002, 'deep': 1110, 'difficulty': 1213, 'address': 61, 'size': 4040, 'recomended': 3606, 'chart': 717, 'real': 3577, 'small': 4074, 'sheer': 3964, 'item': 2386, 'internet': 2344, 'store': 4243, 'check': 724, 'men': 2799, 'model': 2868, 'may': 2763, 'ok': 3076, 'type': 4628, 'active': 43, 'around': 240, 'alot': 137, 'job': 2425, 'consistently': 918, 'found': 1805, 'ankle': 185, 'solution': 4101, 'standard': 4197, 'stock': 4236, 'stay': 4212, 'pair': 3169, 'tear': 4396, 'struggle': 4272, 'investment': 2365, 'delicious': 1135, 'funny': 1858, 'quickly': 3516, 'package': 3160, 'notice': 3030, 'since': 4022, 'convenience': 945, 'wrap': 4955, 'plastic': 3306, 'log': 2640, 'messy': 2811, 'extremely': 1613, 'sticky': 4228, 'ingredient': 2292, 'extra': 1609, 'butter': 602, 'really': 3583, 'large': 2518, 'chocolate': 743, 'chip': 742, 'addition': 59, 'flavor': 1741, 'digital': 1215, 'copy': 958, 'rather': 3563, 'scratch': 3876, 'random': 3548, 'combine': 833, 'light': 2587, 'vague': 4729, 'image': 2227, 'resolution': 3698, 'packaging': 3161, 'straight': 4250, 'street': 4259, 'corner': 962, 'bootleg': 496, 'see': 3902, 'reasonably': 3588, 'condition': 897, 'film': 1703, 'define': 1119, 'visuals': 4792, 'crystal': 1031, 'contrast': 938, 'black': 453, 'surround': 4348, 'countryside': 979, 'scene': 3855, 'set': 3936, 'early': 1374, 'morning': 2896, 'ground': 1988, 'memory': 2798, 'event': 1527, 'bridge': 544, 'water': 4841, 'bright': 547, 'dull': 1355, 'dark': 1073, 'cloud': 807, 'captain': 637, 'command': 845, 'hard': 2037, 'award': 316, 'acclaim': 23, 'presentation': 3404, 'youtube': 4992, 'somewhere': 4111, 'dvd': 1364, 'public': 3483, 'library': 2579, 'none': 3015, 'appear': 217, 'fascinating': 1652, 'insight': 2304, 'modern': 2869, 'japanese': 2401, 'thoroughly': 4475, 'rise': 3747, 'son': 4112, 'daughter': 1080, 'society': 4092, 'view': 4769, 'parent': 3188, 'culture': 1036, 'community': 855, 'peer': 3229, 'western': 4867, 'form': 1790, 'new': 2983, 'japan': 2400, 'international': 2343, 'blend': 463, 'demonstrate': 1147, 'private': 3431, 'member': 2795, 'steven': 4224, 'clearly': 788, 'talented': 4377, 'adopt': 70, 'school': 3862, 'four': 1807, 'thus': 4491, 'able': 3, 'inside': 2303, 'album': 120, 'thought': 4478, 'blue': 473, 'angel': 177, 'hair': 2016, 'singer': 4026, 'talent': 4376, 'charge': 709, 'charger': 710, 'aa': 0, 'battery': 370, 'huge': 2183, 'secure': 3899, 'flip': 1753, 'little': 2627, 'button': 603, 'positive': 3357, 'pop': 3344, 'wo': 4924, 'hold': 2131, 'mechanism': 2779, 'become': 389, 'loose': 2653, 'pressure': 3408, 'push': 3504, 'tape': 4383, 'segment': 3906, 'apply': 222, 'painful': 3165, 'advertised': 80, 'instruction': 2319, 'dont': 1300, 'do': 1282, 'hour': 2173, 'return': 3716, 'useless': 4717, 'backup': 332, 'manage': 2713, 'drain': 1319, 'purchase': 3497, 'convenient': 946, 'last': 2522, 'short': 3986, 'long': 2649, 'dear': 1092, 'excite': 1565, 'muslim': 2935, 'volume': 4802, 'live': 2628, 'essay': 1510, 'among': 162, 'describe': 1161, 'explain': 1592, 'woman': 4927, 'cape': 635, 'town': 4555, 'claim': 774, 'separate': 3923, 'equal': 1496, 'hop': 2152, 'feminist': 1684, 'surprised': 4343, 'virtue': 4784, 'female': 1682, 'base': 354, 'christmas': 754, 'present': 3403, 'join': 2431, 'rest': 3708, 'vhs': 4758, 'movie': 2915, 'tv': 4621, 'choice': 744, 'agree': 101, 'awkward': 323, 'selection': 3909, 'option': 3102, 'hang': 2029, 'comment': 846, 'complicated': 876, 'many': 2725, 'remote': 3668, 'rely': 3656, 'heavily': 2080, 'manual': 2722, 'vcr': 4742, 'timer': 4508, 'start': 4205, 'scroll': 3884, 'complaint': 870, 'incorrect': 2265, 'disc': 1239, 'fan': 1642, 'saw': 3840, 'unit': 4674, 'section': 3898, 'happy': 2036, 'click': 792, 'receiver': 3596, 'transition': 4572, 'smooth': 4081, 'pause': 3217, 'fairly': 1631, 'message': 2810, 'nut': 3043, 'television': 4407, 'bookshelf': 493, 'audio': 293, 'system': 4369, 'car': 642, 'move': 2913, 'room': 3774, 'combo': 834, 'except': 1558, 'cable': 612, 'box': 514, 'control': 942, 'input': 2300, 'programming': 3452, 'mono': 2881, 'wife': 4894, 'difference': 1209, 'title': 4519, 'hollywood': 2137, 'ridiculous': 3740, 'wonder': 4928, 'script': 3882, 'mountain': 2910, 'lion': 2611, 'trailer': 4566, 'behind': 403, 'capture': 641, 'jail': 2395, 'cell': 681, 'utterly': 4726, 'completely': 872, 'stupid': 4282, 'bet': 428, 'hotel': 2171, 'incredible': 2267, 'act': 40, 'bbc': 375, 'soap': 4088, 'max': 2762, 'mariah': 2730, 'drama': 1320, 'series': 3929, 'opera': 3090, 'air': 107, 'america': 158, 'episode': 1494, 'season': 3892, 'finale': 1707, 'interesting': 2339, 'remind': 3664, 'reason': 3586, 'fictional': 1690, 'san': 3821, 'francisco': 1815, 'recommend': 3607, 'willing': 4900, 'watch': 4838, 'already': 140, 'law': 2533, 'seriously': 3931, 'unfortunately': 4665, 'entertain': 1480, 'order': 3105, 'hip': 2119, 'daddy': 1059, 'vibe': 4760, 'fourth': 1808, 'class': 779, 'main': 2700, 'playing': 3314, 'voice': 4800, 'party': 3197, 'anywhere': 208, 'neighborhood': 2974, 'laugh': 2528, 'beach': 378, 'grow': 1990, 'surfer': 4339, 'southern': 4136, 'california': 615, 'brother': 559, 'honestly': 2147, 'kinda': 2473, 'surf': 4337, 'hell': 2087, 'moral': 2893, 'aspect': 265, 'american': 159, 'explanation': 1593, 'simple': 4015, 'focus': 1769, 'individual': 2278, 'ignore': 2216, 'personal': 3253, 'responsibility': 3706, 'final': 1706, 'response': 3705, 'robert': 3756, 'seller': 3912, 'disgust': 1253, 'state': 4207, 'medium': 2785, 'politics': 3338, 'general': 1891, 'head': 2063, 'substantial': 4293, 'challenge': 698, 'lie': 2582, 'being': 404, 'larry': 2520, 'label': 2498, 'late': 2523, 'explore': 1596, 'rich': 3734, 'catalog': 666, 'jazz': 2408, 'musician': 2932, 'stand': 4196, 'mile': 2831, 'mac': 2688, 'line': 2607, 'windows': 4905, 'frustrating': 1845, 'excited': 1566, 'attempt': 283, 'touch': 4547, 'mouse': 2911, 'arrow': 245, 'keyboard': 2466, 'fun': 1851, 'disapointed': 1232, 'attention': 285, 'level': 2574, 'rescue': 3694, 'hero': 2098, 'dog': 1289, 'former': 1794, 'repeatedly': 3679, 'recipe': 3602, 'throw': 4488, 'cup': 1038, 'nearly': 2963, 'compare': 860, 'ed': 1391, 'wood': 4932, 'flawlessly': 1744, 'lisa': 2615, 'wild': 4896, 'bread': 530, 'novice': 3035, 'place': 3298, 'reliable': 3651, 'concise': 894, 'information': 2289, 'maintain': 2703, 'fabulous': 1618, 'pass': 3199, 'historical': 2123, 'interest': 2337, 'cost': 968, 'alaska': 117, 'visit': 4788, 'starter': 4206, 'collection': 825, 'advise': 84, 'ruth': 3801, 'picture': 3281, 'past': 3204, 'ago': 100, 'mixer': 2864, 'stuff': 4277, 'pot': 3366, 'close': 800, 'download': 1310, 'decade': 1098, 'background': 330, 'russia': 3798, 'hunt': 2194, 'melody': 2793, 'english': 1468, 'lyric': 2685, 'else': 1428, 'via': 4759, 'happily': 2034, 'ipod': 2371, 'experience': 1586, 'fm': 1767, 'rattle': 3565, 'sometimes': 4109, 'quality': 3507, 'screen': 3878, 'thru': 4489, 'middle': 2824, 'plus': 3324, 'dead': 1087, 'layout': 2536, 'sense': 3916, 'engineering': 1466, 'imo': 2237, 'refund': 3628, 'name': 2944, 'hesitant': 2100, 'flat': 1740, 'panel': 3175, 'lcd': 2539, 'build': 582, 'weight': 4862, 'space': 4138, 'save': 3838, 'attractive': 291, 'design': 1167, 'sharp': 3962, 'playback': 3312, 'negative': 2972, 'function': 1852, 'key': 2465, 'due': 1352, 'color': 829, 'almost': 134, 'carefully': 648, 'terrible': 4428, 'birthday': 447, 'fail': 1627, 'junk': 2452, 'capable': 633, 'recall': 3591, 'flash': 1738, 'channel': 703, 'sony': 4116, 'universal': 4676, 'learn': 2549, 'factory': 1623, 'deal': 1090, 'user': 4718, 'annoy': 190, 'replace': 3682, 'tube': 4611, 'gain': 1868, 'counter': 976, 'internal': 2342, 'bonus': 489, 'defective': 1115, 'electronics': 1419, 'express': 1601, 'contact': 926, 'number': 3040, 'pick': 3279, 'arrive': 244, 'week': 4859, 'later': 2525, 'clarity': 777, 'mode': 2867, 'loud': 2662, 'rv': 3802, 'run': 3793, 'barely': 350, 'solve': 4102, 'jack': 2392, 'stereo': 4221, 'speaker': 4145, 'lightweight': 2592, 'antenna': 195, 'opinion': 3094, 'bias': 432, 'angle': 179, 'europe': 1521, 'clean': 785, 'proper': 3465, 'shed': 3963, 'understand': 4653, 'guide': 1999, 'tour': 4550, 'country': 978, 'reference': 3622, 'travel': 4579, 'outline': 3132, 'detail': 1177, 'disappointment': 1237, 'realy': 3584, 'everybody': 1532, 'combination': 832, 'illustration': 2225, 'text': 4439, 'overall': 3137, 'sight': 4001, 'city': 771, 'european': 1522, 'thank': 4444, 'lonely': 2648, 'planet': 3303, 'info': 2287, 'surface': 4338, 'receive': 3595, 'germany': 1906, 'overview': 3149, 'greece': 1975, 'spanish': 4140, 'sort': 4127, 'printing': 3427, 'highlight': 2110, 'front': 1841, 'course': 982, 'kid': 2468, 'jay': 2407, 'eric': 1502, 'tender': 4421, 'rock': 3759, 'offend': 3066, 'either': 1412, 'depend': 1152, 'foot': 1779, 'accept': 16, 'way': 4845, 'gift': 1912, 'husband': 2199, 'date': 1078, 'disappointing': 1236, 'plate': 3307, 'inferior': 2283, 'previous': 3414, 'edition': 1396, 'ahead': 103, 'homer': 2142, 'helpful': 2090, 'gem': 1890, 'complex': 873, 'subject': 4288, 'second': 3894, 'century': 690, 'religious': 3655, 'authority': 303, 'serious': 3930, 'period': 3249, 'essential': 1512, 'argue': 235, 'yes': 4983, 'cardboard': 644, 'beat': 383, 'cheesy': 727, 'across': 39, 'entire': 1485, 'solid': 4098, 'decent': 1101, 'distance': 1269, 'scrap': 3875, 'noticeable': 3031, 'plenty': 3321, 'material': 2756, 'loosely': 2654, 'bottom': 507, 'ship': 3974, 'exchange': 1564, 'damage': 1063, 'risk': 3748, 'unknown': 4679, 'africa': 93, 'produce': 3439, 'mixture': 2865, 'african': 94, 'feeling': 1676, 'soft': 4094, 'fit': 1731, 'record': 3610, 'france': 1813, 'paris': 3189, 'professional': 3444, 'hot': 2170, 'lazy': 2537, 'expectation': 1582, 'shoe': 3981, 'rip': 3746, 'apart': 211, 'sole': 4097, 'clark': 778, 'sadly': 3807, 'within': 4919, 'month': 2887, 'similar': 4012, 'profound': 3448, 'narrative': 2947, 'style': 4285, 'famous': 1641, 'john': 2428, 'frequently': 1829, 'carry': 654, 'tone': 4532, 'amateur': 151, 'historian': 2122, 'neither': 2975, 'boston': 504, 'graduate': 1957, 'consider': 915, 'represent': 3687, 'today': 4520, 'research': 3695, 'thin': 4465, 'conclude': 895, 'essentially': 1513, 'primary': 3420, 'secondary': 3895, 'source': 4134, 'rat': 3561, 'yr': 4993, 'barbie': 347, 'computer': 886, 'worry': 4944, 'vibrant': 4761, 'friendly': 1835, 'mommy': 2876, 'ton': 4531, 'together': 4524, 'decorate': 1106, 'alone': 135, 'creativity': 1005, 'adventure': 78, 'addict': 57, 'opening': 3089, 'sing': 4025, 'non': 3014, 'stop': 4241, 'prince': 3423, 'program': 3450, 'cry': 1030, 'child': 735, 'currently': 1044, 'bedroom': 393, 'result': 3711, 'painting': 3168, 'flower': 1760, 'halfway': 2019, 'exit': 1577, 'freeze': 1826, 'spot': 4177, 'urge': 4708, 'software': 4095, 'reboot': 3590, 'site': 4035, 'frustrate': 1843, 'fault': 1660, 'catch': 668, 'bug': 579, 'buck': 570, 'avoid': 313, 'creative': 1004, 'granddaughter': 1963, 'plan': 3301, 'imagination': 2229, 'fight': 1696, 'choose': 745, 'theme': 4452, 'allow': 131, 'power': 3372, 'stone': 4239, 'animation': 183, 'bore': 498, 'adult': 73, 'variation': 4737, 'scheme': 3859, 'pattern': 3214, 'highly': 2111, 'rental': 3676, 'basically': 359, 'sister': 4033, 'os': 3119, 'classic': 780, 'multiple': 2925, 'access': 18, 'everytime': 1537, 'task': 4385, 'sequence': 3927, 'file': 1700, 'crash': 996, 'possible': 3359, 'grand': 1961, 'patience': 3210, 'survive': 4351, 'trial': 4590, 'substitute': 4294, 'vendor': 4750, 'feedback': 1671, 'rate': 3562, 'bother': 505, 'future': 1861, 'company': 859, 'mistake': 2860, 'hundred': 2192, 'dollar': 1294, 'building': 583, 'careful': 647, 'smell': 4077, 'bottle': 506, 'delicate': 1134, 'summer': 4319, 'impressed': 2247, 'creepy': 1010, 'wow': 4954, 'revenge': 3720, 'door': 1302, 'open': 3087, 'prepare': 3400, 'didnt': 1204, 'menu': 2804, 'exist': 1575, 'matter': 2759, 'exception': 1559, 'dubbing': 1348, 'sub': 4287, 'par': 3179, 'remain': 3657, 'shame': 3958, 'original': 3113, 'offering': 3069, 'sooo': 4119, 'official': 3072, 'production': 3442, 'screw': 3881, 'pioneer': 3291, 'sad': 3806, 'ya': 4971, 'rap': 3554, 'ta': 4370, 'blow': 471, 'jam': 2396, 'ride': 3739, 'underrated': 4652, 'houston': 2176, 'pat': 3206, 'steve': 4223, 'regardless': 3632, 'alive': 128, 'legacy': 2557, 'dirty': 1230, 'south': 4135, 'guest': 1997, 'fat': 1656, 'chris': 749, 'chronicle': 756, 'farm': 1650, 'photo': 3270, 'version': 4756, 'bill': 437, 'history': 2125, 'relationship': 3644, 'loved': 2668, 'treasure': 4583, 'keeper': 2460, 'draw': 1322, 'idea': 2207, 'comfy': 842, 'lounge': 2664, 'cake': 614, 'topper': 4539, 'june': 2449, 'estimate': 1517, 'shipping': 3976, 'july': 2446, 'wrong': 4962, 'pearl': 3224, 'kit': 2479, 'cute': 1052, 'provide': 3477, 'annoyed': 191, 'include': 2259, 'trust': 4608, 'additional': 60, 'sweet': 4359, 'grace': 1954, 'email': 1432, 'supply': 4328, 'list': 2616, 'sheet': 3965, 'ready': 3576, 'boot': 495, 'phone': 3269, 'manufacturer': 2724, 'unreliable': 4689, 'critic': 1017, 'consumer': 925, 'alike': 126, 'release': 3648, 'debut': 1097, 'radio': 3535, 'hit': 2126, 'dj': 1281, 'band': 343, 'hopefully': 2155, 'club': 808, 'sale': 3815, 'practically': 3376, 'leap': 2548, 'grab': 1953, 'neck': 2967, 'upcoming': 4696, 'omg': 3080, 'own': 3154, 'saturday': 3837, 'cause': 673, 'classical': 781, 'jason': 2403, 'lead': 2541, 'moment': 2875, 'relief': 3652, 'minimum': 2843, 'achieve': 33, 'suggest': 4312, 'skip': 4050, 'finally': 1708, 'horribly': 2160, 'lack': 2502, 'mystery': 2938, 'ten': 4419, 'educational': 1400, 'train': 4567, 'shape': 3959, 'guarantee': 1993, 'puzzle': 3506, 'range': 3550, 'silly': 4010, 'odd': 3060, 'theory': 4454, 'concert': 893, 'string': 4265, 'appreciate': 223, 'excelent': 1553, 'rendition': 3673, 'caution': 674, 'remastered': 3662, 'irrelevant': 2378, 'textbook': 4440, 'transaction': 4569, 'engage': 1462, 'te': 4390, 'wash': 4831, 'shore': 3985, 'colin': 821, 'tess': 4436, 'opposite': 3097, 'attract': 289, 'call': 616, 'trashy': 4578, 'usually': 4722, 'tie': 4495, 'enchant': 1453, 'heroine': 2099, 'part': 3191, 'content': 930, 'island': 2381, 'solitude': 4099, 'shake': 3953, 'fear': 1665, 'strange': 4252, 'strike': 4264, 'friendship': 1836, 'courage': 981, 'amusing': 166, 'mostly': 2899, 'characterization': 708, 'character': 706, 'introduce': 2355, 'behavior': 402, 'development': 1185, 'force': 1783, 'improve': 2250, 'towards': 4553, 'portable': 3350, 'drive': 1335, 'disappoint': 1234, 'performance': 3246, 'constantly': 921, 'half': 2018, 'uncomfortable': 4648, 'pant': 3176, 'incredibly': 2268, 'stiff': 4229, 'authentic': 301, 'encounter': 1454, 'yoruba': 4989, 'particular': 3193, 'certain': 692, 'nuance': 3037, 'speak': 4144, 'anybody': 201, 'clue': 809, 'question': 3513, 'unanswered': 4643, 'impossible': 2245, 'native': 2954, 'confuse': 906, 'teach': 4392, 'basic': 358, 'vocabulary': 4797, 'specific': 4151, 'vehicle': 4746, 'correct': 966, 'mat': 2754, 'therefore': 4458, 'sit': 4034, 'grandchild': 1962, 'value': 4732, 'toe': 4522, 'kelly': 2461, 'pet': 3258, 'parade': 3182, 'dress': 1329, 'pony': 3340, 'jump': 2447, 'etc': 1519, 'animal': 181, 'nail': 2943, 'float': 1754, 'accomplish': 25, 'along': 136, 'wonderfully': 4930, 'instal': 2311, 'laptop': 2516, 'tough': 4549, 'bear': 381, 'fish': 1727, 'finger': 1714, 'pad': 3162, 'load': 2634, 'different': 1210, 'endless': 1458, 'graphic': 1968, 'colorful': 830, 'winner': 4908, 'reinstall': 3640, 'issue': 2383, 'activity': 44, 'slip': 4068, 'heel': 2083, 'satisfy': 3835, 'manner': 2719, 'awesome': 320, 'advertisement': 81, 'uk': 4635, 'assume': 272, 'available': 308, 'england': 1467, 'arcade': 229, 'ive': 2389, 'guy': 2008, 'compatible': 864, 'machine': 2690, 'deeply': 1111, 'stage': 4190, 'revolution': 3725, 'equivalent': 1500, 'unheard': 4668, 'favourite': 1664, 'situation': 4036, 'lucky': 2678, 'letter': 2573, 'admit': 68, 'michael': 2819, 'montgomery': 2886, 'approach': 225, 'couple': 980, 'beer': 395, 'devil': 1187, 'spice': 4160, 'cuz': 1054, 'soldier': 4096, 'punk': 3495, 'hr': 2180, 'ball': 337, 'este': 1516, 'libro': 2580, 'lo': 2633, 'que': 3510, 'el': 1413, 'si': 3998, 'de': 1086, 'con': 887, 'mi': 2818, 'ex': 1546, 'cereal': 691, 'hook': 2150, 'breakfast': 533, 'eat': 1384, 'especially': 1509, 'taste': 4386, 'hungry': 2193, 'bunch': 590, 'splendid': 4171, 'fill': 1701, 'word': 4934, 'warning': 4828, 'cabinet': 611, 'local': 2635, 'walmart': 4816, 'church': 760, 'bowl': 513, 'timber': 4504, 'frame': 1812, 'technical': 4398, 'joint': 2432, 'span': 4139, 'mill': 2834, 'museum': 2929, 'master': 2751, 'recent': 3597, 'trip': 4598, 'avid': 312, 'breeze': 540, 'various': 4739, 'illustrate': 2223, 'fascinate': 1651, 'practical': 3375, 'outstanding': 3136, 'although': 146, 'construction': 923, 'invaluable': 2358, 'process': 3438, 'editing': 1395, 'spell': 4157, 'caption': 638, 'cap': 632, 'traditional': 4562, 'print': 3425, 'drawing': 1324, 'inform': 2288, 'project': 3455, 'dip': 1222, 'temperature': 4413, 'shrink': 3995, 'egg': 1407, 'transfer': 4570, 'needless': 2970, 'intelligent': 2329, 'immediately': 2234, 'property': 3467, 'explicit': 1594, 'war': 4821, 'coast': 811, 'pc': 3219, 'sink': 4031, 'meant': 2774, 'race': 3528, 'battlefield': 372, 'landscape': 2511, 'slide': 4064, 'total': 4543, 'rubbish': 3787, 'mine': 2840, 'ireland': 2373, 'florida': 1758, 'costly': 969, 'henry': 2095, 'nose': 3026, 'chew': 731, 'nobody': 3009, 'worn': 4943, 'clone': 799, 'forty': 1801, 'dad': 1058, 'ill': 2219, 'significance': 4005, 'battle': 371, 'obsession': 3050, 'replacement': 3683, 'safely': 3810, 'closet': 803, 'shelf': 3966, 'thread': 4482, 'bare': 349, 'online': 3083, 'overwhelm': 3150, 'less': 2569, 'thanks': 4447, 'disney': 1261, 'toy': 4557, 'six': 4037, 'contemporary': 929, 'delight': 1136, 'snow': 4086, 'ups': 4703, 'reward': 3727, 'forward': 1803, 'detailed': 1178, 'sketch': 4045, 'excitement': 1567, 'actual': 47, 'complicate': 875, 'beginner': 399, 'thrill': 4484, 'instructional': 2320, 'match': 2755, 'cushion': 1048, 'description': 1163, 'deliver': 1138, 'impression': 2248, 'insert': 2302, 'attach': 281, 'strap': 4255, 'definately': 1118, 'luckily': 2677, 'policy': 3334, 'free': 1824, 'sex': 3945, 'publish': 3485, 'broadway': 556, 'theatre': 4450, 'archive': 231, 'witty': 4923, 'ruin': 3790, 'costume': 970, 'absurd': 10, 'blanket': 459, 'acting': 41, 'btw': 568, 'director': 1228, 'goal': 1933, 'intention': 2333, 'recording': 3611, 'extended': 1604, 'drinking': 1333, 'blurry': 478, 'audience': 292, 'charm': 715, 'chance': 700, 'student': 4274, 'compilation': 868, 'perform': 3245, 'artist': 252, 'poorly': 3343, 'wave': 4844, 'prior': 3428, 'imply': 2240, 'garbage': 1878, 'prompt': 3459, 'november': 3034, 'nowhere': 3036, 'deceive': 1099, 'group': 1989, 'duh': 1353, 'trash': 4577, 'reception': 3599, 'session': 3935, 'cheap': 721, 'vocalist': 4799, 'die': 1205, 'camera': 618, 'continue': 933, 'tech': 4397, 'mr': 2917, 'curious': 1042, 'producer': 3440, 'realize': 3582, 'reveal': 3718, 'crucial': 1026, 'unbelievable': 4645, 'earlier': 1373, 'detective': 1180, 'attorney': 288, 'unfold': 4662, 'abuse': 11, 'childhood': 737, 'forgive': 1789, 'successful': 4300, 'spite': 4170, 'horrendous': 2158, 'lord': 2655, 'refer': 3621, 'peter': 3259, 'stark': 4203, 'major': 2704, 'league': 2545, 'score': 3872, 'extensive': 1606, 'resource': 3702, 'deserve': 1166, 'tomorrow': 4530, 'till': 4501, 'massive': 2750, 'living': 2630, 'subscription': 4289, 'coverage': 987, 'minor': 2846, 'college': 827, 'brand': 526, 'steer': 4216, 'secret': 3896, 'joe': 2427, 'al': 114, 'phil': 3264, 'intriguing': 2353, 'influence': 2285, 'titan': 4517, 'exploration': 1595, 'jet': 2418, 'craft': 991, 'fuel': 1848, 'atmosphere': 279, 'originally': 3115, 'intrigue': 2352, 'father': 1659, 'mission': 2859, 'reality': 3581, 'fantasy': 1646, 'david': 1082, 'asimov': 262, 'peek': 3227, 'block': 467, 'obviously': 3053, 'fails': 1628, 'noise': 3011, 'incorporate': 2264, 'easily': 1380, 'identify': 2210, 'banana': 342, 'penguin': 3234, 'wall': 4815, 'smash': 4076, 'drop': 1338, 'tolerate': 4525, 'treatment': 4585, 'art': 246, 'collector': 826, 'twin': 4624, 'learning': 2550, 'tool': 4535, 'fisher': 1728, 'spin': 4164, 'queen': 3511, 'stack': 4189, 'knock': 2486, 'bang': 344, 'plain': 3300, 'wooden': 4933, 'object': 3045, 'opportunity': 3095, 'eye': 1615, 'decision': 1103, 'overnight': 3143, 'rocket': 3761, 'scientist': 3867, 'rub': 3785, 'dissapointing': 1266, 'concept': 890, 'baby': 327, 'mother': 2900, 'imaginative': 2230, 'edge': 1393, 'safety': 3811, 'grandson': 1966, 'goodness': 1942, 'shopping': 3984, 'interested': 2338, 'manipulate': 2717, 'adorable': 71, 'upgrade': 4699, 'format': 1792, 'storage': 4242, 'durable': 1361, 'perfectly': 3244, 'hurt': 2198, 'category': 670, 'factor': 1622, 'fully': 1850, 'comprehend': 882, 'dig': 1214, 'broke': 557, 'waterproof': 4842, 'whale': 4869, 'mary': 2745, 'study': 4276, 'communication': 852, 'washington': 4834, 'direct': 1224, 'nifty': 2997, 'halloween': 2021, 'dummy': 1358, 'nevertheless': 2982, 'depict': 1153, 'liked': 2595, 'certainly': 693, 'campaign': 621, 'academic': 13, 'organization': 3110, 'dedicate': 1109, 'propaganda': 3464, 'office': 3070, 'regularly': 3638, 'hide': 2106, 'terrorist': 4434, 'weapon': 4850, 'violence': 4778, 'intend': 2330, 'innocent': 2298, 'murder': 2927, 'extreme': 1612, 'formula': 1795, 'fortunately': 1799, 'hesitate': 2101, 'chinese': 741, 'green': 1977, 'red': 3614, 'logo': 2644, 'fx': 1865, 'serial': 3928, 'handful': 2026, 'memorable': 2797, 'seal': 3888, 'wing': 4907, 'blame': 456, 'self': 3910, 'sorry': 4126, 'travesty': 4581, 'killer': 2470, 'supernatural': 4325, 'storyline': 4247, 'hole': 2133, 'gory': 1948, 'confusing': 908, 'stephen': 4220, 'initially': 2294, 'indie': 2277, 'horror': 2164, 'flick': 1749, 'jennifer': 2413, 'weekend': 4860, 'bernie': 424, 'terry': 4435, 'actor': 45, 'lol': 2645, 'anyways': 207, 'mask': 2746, 'maker': 2707, 'suspense': 4353, 'display': 1262, 'effort': 1406, 'dialogue': 1196, 'tree': 4586, 'root': 3775, 'yard': 4973, 'knee': 2481, 'cinematic': 764, 'path': 3208, 'typically': 4630, 'predictable': 3389, 'fashion': 1653, 'victim': 4766, 'face': 1619, 'motivation': 2905, 'entry': 1489, 'familiar': 1639, 'cast': 661, 'effective': 1404, 'treat': 4584, 'williams': 4899, 'role': 3764, 'lee': 2554, 'doom': 1301, 'equally': 1497, 'ii': 2217, 'filmmaker': 1704, 'borrow': 502, 'everyone': 1535, 'elevate': 1422, 'unimaginative': 4669, 'exactly': 1548, 'fright': 1837, 'safe': 3809, 'boring': 501, 'brief': 545, 'appearance': 218, 'icon': 2206, 'genre': 1899, 'artifact': 250, 'card': 643, 'yellow': 4980, 'ordinary': 3107, 'holocaust': 2139, 'diary': 1200, 'extract': 1610, 'eastern': 1382, 'medicine': 2783, 'dissappointed': 1268, 'unhappy': 4667, 'practice': 3377, 'primer': 3422, 'basis': 360, 'application': 221, 'philosophy': 3268, 'emphasize': 1447, 'natural': 2955, 'balance': 336, 'nature': 2957, 'informative': 2290, 'redundant': 3620, 'combat': 831, 'pleasure': 3320, 'respect': 3703, 'ambient': 157, 'enthusiast': 1484, 'whatsoever': 4872, 'darn': 1076, 'guitarist': 2005, 'utopia': 4723, 'dissapointed': 1265, 'direction': 1226, 'dry': 1344, 'pillow': 3286, 'advertise': 79, 'post': 3361, 'tiny': 4512, 'foam': 1768, 'worthless': 4949, 'amount': 163, 'whatever': 4870, 'super': 4321, 'handle': 2027, 'heavy': 2081, 'dense': 1148, 'cant': 630, 'prop': 3463, 'sleep': 4059, 'otherwise': 3122, 'position': 3356, 'width': 4892, 'rotate': 3778, 'lay': 2534, 'false': 1637, 'military': 2832, 'pic': 3278, 'reply': 3685, 'serum': 3932, 'tend': 4420, 'rid': 3737, 'weather': 4852, 'somehow': 4105, 'double': 1305, 'ai': 104, 'fix': 1735, 'slightly': 4066, 'shop': 3983, 'grocery': 1985, 'dick': 1201, 'provoking': 3480, 'winter': 4910, 'suit': 4315, 'advanced': 76, 'powerful': 3374, 'prefer': 3391, 'outfit': 3130, 'skate': 4042, 'automatically': 306, 'hello': 2088, 'technique': 4399, 'stroke': 4268, 'body': 482, 'split': 4172, 'muscle': 2928, 'kick': 2467, 'crook': 1023, 'worthwhile': 4950, 'stink': 4233, 'scream': 3877, 'ice': 2205, 'simplistic': 4018, 'strive': 4267, 'onto': 3084, 'enjoyment': 1474, 'low': 2672, 'dud': 1350, 'somebody': 4103, 'thats': 4448, 'sake': 3814, 'sparkle': 4143, 'seven': 3940, 'window': 4904, 'xp': 4969, 'frustration': 1846, 'crowd': 1025, 'despite': 1173, 'trick': 4593, 'yesterday': 4984, 'confidence': 900, 'smoothly': 4082, 'gentleman': 1901, 'la': 2496, 'rating': 3564, 'pity': 3297, 'delivery': 1140, 'mail': 2699, 'joy': 2438, 'rare': 3557, 'dose': 1303, 'fire': 1718, 'truck': 4604, 'pleased': 3319, 'horse': 2165, 'imagery': 2228, 'newspaper': 2987, 'afternoon': 95, 'supplier': 4327, 'nasty': 2950, 'apartment': 212, 'switch': 4361, 'outlet': 3131, 'eight': 1411, 'plug': 3323, 'saver': 3839, 'device': 1186, 'hitch': 2127, 'mystical': 2939, 'relax': 3647, 'dr': 1315, 'legend': 2559, 'stranger': 4254, 'dream': 1327, 'surreal': 4346, 'symbolism': 4364, 'someday': 4104, 'peace': 3221, 'shin': 3972, 'land': 2510, 'charming': 716, 'captivate': 639, 'lj': 2631, 'smith': 4079, 'ash': 257, 'teenage': 4404, 'humor': 2189, 'paranormal': 3187, 'disaster': 1238, 'area': 232, 'darkness': 1075, 'hooked': 2151, 'protect': 3473, 'happiness': 2035, 'possibly': 3360, 'instantly': 2317, 'inspire': 2309, 'poetry': 3329, 'respond': 3704, 'personality': 3254, 'vampire': 4734, 'vision': 4787, 'trilogy': 4596, 'recognize': 3604, 'soulmate': 4130, 'unrealistic': 4688, 'slayer': 4058, 'tune': 4614, 'male': 2710, 'attraction': 290, 'witch': 4918, 'instance': 2315, 'burning': 595, 'legendary': 2560, 'publishing': 3487, 'gel': 1889, 'pen': 3232, 'ink': 2296, 'bleed': 462, 'square': 4183, 'locate': 2637, 'left': 2555, 'magazine': 2695, 'publication': 3484, 'mirror': 2851, 'glimpse': 1924, 'nation': 2952, 'shortly': 3987, 'scholar': 3860, 'compelling': 866, 'illuminate': 2221, 'precious': 3385, 'examine': 1551, 'evolution': 1544, 'conclusion': 896, 'vast': 4741, 'data': 1077, 'readable': 3572, 'reflection': 3625, 'professor': 3445, 'regret': 3636, 'wade': 4809, 'likely': 2596, 'wealth': 4849, 'awake': 315, 'invest': 2363, 'somewhat': 4110, 'useful': 4716, 'richard': 3735, 'convincing': 951, 'wide': 4889, 'perspective': 3256, 'kylie': 2495, 'bite': 450, 'subtlety': 4297, 'subtle': 4296, 'performer': 3247, 'ballad': 338, 'nightmare': 2999, 'flow': 1759, 'catchy': 669, 'chorus': 748, 'melt': 2794, 'funky': 1857, 'language': 2513, 'usa': 4710, 'import': 2241, 'limit': 2602, 'border': 497, 'edit': 1394, 'cut': 1051, 'arrangement': 242, 'rarity': 3559, 'tom': 4526, 'remix': 3667, 'dub': 1347, 'cord': 960, 'thomas': 4473, 'naturally': 2956, 'compel': 865, 'relate': 3642, 'rambling': 3545, 'involve': 2368, 'mindless': 2839, 'footage': 1780, 'meet': 2786, 'rent': 3675, 'kay': 2457, 'aside': 261, 'gear': 1888, 'toward': 4552, 'pack': 3159, 'interview': 2348, 'normal': 3022, 'center': 688, 'commercial': 848, 'introduction': 2356, 'pain': 3164, 'frustrated': 1844, 'advice': 83, 'asleep': 264, 'horrific': 2162, 'warrior': 4830, 'brilliantly': 549, 'gore': 1946, 'fanatic': 1643, 'warranty': 4829, 'equipment': 1499, 'printer': 3426, 'strip': 4266, 'stretch': 4262, 'waist': 4810, 'tight': 4496, 'inch': 2258, 'earn': 1375, 'comfortable': 839, 'largely': 2519, 'out': 3125, 'slack': 4052, 'usual': 4721, 'normally': 3023, 'flimsy': 1751, 'fabric': 1617, 'advertising': 82, 'coffee': 817, 'gray': 1971, 'misleading': 2855, 'skinny': 4049, 'business': 598, 'chain': 696, 'iron': 2375, 'emphasis': 1446, 'mature': 2761, 'shy': 3997, 'disturb': 1274, 'render': 3672, 'fairy': 1632, 'tale': 4375, 'grim': 1979, 'wwii': 4965, 'glove': 1928, 'appropriate': 226, 'valuable': 4731, 'alternative': 145, 'italy': 2385, 'youth': 4991, 'confusion': 909, 'credibility': 1007, 'rome': 3771, 'appreciation': 224, 'depth': 1159, 'dish': 1254, 'satisfying': 3836, 'flight': 1750, 'food': 1777, 'used': 4715, 'relatively': 3646, 'detract': 1183, 'laura': 2532, 'enhance': 1470, 'overdone': 3139, 'pun': 3492, 'sensual': 3919, 'glory': 1927, 'soul': 4128, 'preparation': 3399, 'discover': 1245, 'mexican': 2817, 'magic': 2696, 'fable': 1616, 'cook': 952, 'nude': 3038, 'chick': 733, 'lit': 2623, 'roman': 3768, 'cooking': 955, 'market': 2734, 'porn': 3348, 'desire': 1168, 'bath': 367, 'tip': 4513, 'insult': 2324, 'everywhere': 1538, 'vivid': 4795, 'lousy': 2665, 'jerk': 2415, 'portray': 3353, 'substance': 4291, 'sexy': 3948, 'metaphor': 2814, 'adequate': 62, 'occasionally': 3056, 'overlook': 3141, 'plane': 3302, 'suppose': 4330, 'generally': 1892, 'management': 2714, 'heap': 2070, 'report': 3686, 'bos': 503, 'financial': 1710, 'analysis': 169, 'ability': 2, 'topic': 4538, 'ordered': 3106, 'elsewhere': 1429, 'cash': 659, 'tha': 4443, 'existence': 1576, 'permanently': 3251, 'repetitive': 3681, 'repeat': 3678, 'huh': 2184, 'yeah': 4976, 'sign': 4003, 'passing': 3201, 'gon': 1939, 'na': 2942, 'lil': 2598, 'alright': 141, 'rapper': 3556, 'million': 2836, 'juvenile': 2455, 'fade': 1625, 'suck': 4302, 'bounce': 509, 'as': 256, 'da': 1057, 'solo': 4100, 'quit': 3521, 'comedian': 836, 'wayne': 4846, 'besides': 426, 'alien': 125, 'degreez': 1130, 'listening': 2620, 'dictionary': 1203, 'wack': 4808, 'belive': 409, 'wit': 4917, 'crap': 994, 'walk': 4813, 'pointless': 3332, 'definetely': 1120, 'strong': 4269, 'bump': 589, 'iz': 2390, 'em': 1431, 'ha': 2011, 'shot': 3988, 'logic': 2642, 'longer': 2650, 'raise': 3541, 'responsible': 3707, 'co': 810, 'worker': 4938, 'restaurant': 3709, 'french': 1827, 'quarter': 3508, 'orleans': 3116, 'delightful': 1137, 'miller': 2835, 'unlimited': 4683, 'sun': 4320, 'brave': 528, 'tim': 4503, 'dinner': 1220, 'wheel': 4873, 'lesson': 2570, 'desktop': 1170, 'thorough': 4474, 'comprehensive': 883, 'html': 2181, 'web': 4854, 'smart': 4075, 'index': 2271, 'clever': 789, 'expand': 1579, 'technology': 4401, 'advance': 75, 'intermediate': 2341, 'experienced': 1587, 'website': 4856, 'client': 793, 'expert': 1590, 'buying': 606, 'correctly': 967, 'arrival': 243, 'indicate': 2274, 'healthy': 2069, 'thoughtful': 4479, 'fiction': 1689, 'identity': 2211, 'bond': 486, 'evoke': 1543, 'provoke': 3479, 'cultural': 1035, 'australia': 299, 'complain': 869, 'portrayal': 3354, 'cartridge': 657, 'throat': 4486, 'spray': 4179, 'hurry': 2197, 'relieve': 3653, 'yo': 4986, 'sore': 4123, 'recommendation': 3608, 'mom': 2874, 'glider': 1923, 'sooner': 4118, 'bench': 419, 'metal': 2812, 'unsure': 4691, 'tighten': 4497, 'wasnt': 4835, 'bar': 346, 'sturdy': 4284, 'assemble': 267, 'movement': 2914, 'blah': 455, 'compliment': 877, 'chair': 697, 'arm': 238, 'shipment': 3975, 'heck': 2082, 'drag': 1317, 'wet': 4868, 'thinking': 4469, 'james': 2397, 'moody': 2890, 'awsome': 324, 'sample': 3819, 'ear': 1370, 'iv': 2388, 'rush': 3796, 'eerie': 1402, 'itunes': 2387, 'understanding': 4655, 'generation': 1894, 'united': 4675, 'interpret': 2345, 'jewish': 2420, 'worthy': 4951, 'rabbi': 3526, 'element': 1420, 'biblical': 434, 'truth': 4609, 'gospel': 1949, 'socialism': 4091, 'economics': 1389, 'broad': 554, 'variety': 4738, 'political': 3336, 'foster': 1804, 'aesthetic': 87, 'marriage': 2738, 'prejudice': 3395, 'marry': 2740, 'welcome': 4864, 'spouse': 4178, 'consist': 916, 'excessive': 1563, 'argument': 236, 'watchable': 4839, 'married': 2739, 'cat': 665, 'angry': 180, 'yell': 4978, 'length': 2564, 'endure': 1459, 'test': 4437, 'discussion': 1248, 'discuss': 1247, 'outside': 3135, 'literature': 2626, 'answer': 194, 'excuse': 1569, 'wolverine': 4926, 'cheer': 725, 'bye': 608, 'bind': 441, 'bass': 363, 'attitude': 287, 'singing': 4027, 'drum': 1341, 'unique': 4673, 'suggestion': 4313, 'acoustic': 37, 'accord': 27, 'knowledge': 2489, 'instrumental': 2323, 'road': 3754, 'mini': 2841, 'pedal': 3226, 'cheaply': 722, 'terrific': 4430, 'organ': 3108, 'mess': 2809, 'setting': 3937, 'burnt': 596, 'rubber': 3786, 'service': 3934, 'pace': 3157, 'rivet': 3753, 'bookstore': 494, 'gothic': 1951, 'curse': 1045, 'supposedly': 4331, 'impressive': 2249, 'feehan': 1674, 'warn': 4825, 'christine': 753, 'engine': 1464, 'nicoletta': 2995, 'village': 4773, 'exercise': 1573, 'select': 3908, 'mysterious': 2937, 'frighten': 1838, 'communicate': 851, 'similarity': 4013, 'eager': 1368, 'presence': 3402, 'unlike': 4681, 'temper': 4412, 'passion': 3202, 'empathy': 1444, 'potential': 3367, 'develop': 1184, 'spark': 4142, 'action': 42, 'suspenseful': 4354, 'believable': 406, 'pound': 3369, 'emma': 1439, 'holly': 2136, 'reach': 3569, 'dimensional': 1218, 'advantage': 77, 'success': 4299, 'begining': 398, 'bound': 510, 'weird': 4863, 'lively': 2629, 'adore': 72, 'strongly': 4270, 'tea': 4391, 'severely': 3943, 'camcorder': 617, 'usb': 4713, 'overseas': 3147, 'choppy': 746, 'recently': 3598, 'driver': 1337, 'protection': 3474, 'accurate': 30, 'blur': 476, 'barrel': 353, 'distortion': 1272, 'piano': 3277, 'homework': 2143, 'common': 850, 'teacher': 4393, 'lid': 2581, 'accidentally': 22, 'upon': 4701, 'alternate': 144, 'adjust': 64, 'limited': 2604, 'cruel': 1028, 'unusual': 4693, 'patricia': 3212, 'cornwell': 963, 'boyfriend': 518, 'seat': 3893, 'collapse': 822, 'stick': 4226, 'thriller': 4485, 'evil': 1541, 'holder': 2132, 'nazi': 2959, 'criminal': 1013, 'dump': 1359, 'scarpetta': 3852, 'summary': 4318, 'virtually': 4783, 'paramount': 3185, 'harris': 2049, 'becomes': 390, 'trite': 4601, 'frankly': 1819, 'turner': 4617, 'grip': 1982, 'unable': 4641, 'lost': 2660, 'cassette': 660, 'envelope': 1490, 'prevent': 3412, 'forensic': 1786, 'police': 3333, 'row': 3784, 'execute': 1570, 'current': 1043, 'particularly': 3194, 'niece': 2996, 'installment': 2314, 'potter': 3368, 'field': 1692, 'science': 3865, 'muddle': 2922, 'electric': 1415, 'flesh': 1747, 'commit': 849, 'redeem': 3615, 'latter': 2527, 'villain': 4774, 'flaw': 1742, 'bed': 392, 'hardcover': 2040, 'prime': 3421, 'shallow': 3957, 'contain': 927, 'widely': 4890, 'incomplete': 2261, 'binding': 442, 'documentation': 1287, 'unclear': 4647, 'adam': 50, 'unfunny': 4666, 'partner': 3195, 'earth': 1377, 'previously': 3415, 'entertaining': 1481, 'spoil': 4173, 'degrade': 1128, 'zero': 4995, 'nope': 3021, 'studio': 4275, 'wake': 4812, 'sandler': 3825, 'viewer': 4770, 'climax': 795, 'lackluster': 2505, 'entirely': 1486, 'happend': 2031, 'hill': 2117, 'engaging': 1463, 'comic': 843, 'illness': 2220, 'destroy': 1175, 'lifestyle': 2584, 'necessarily': 2965, 'doesnt': 1288, 'george': 1903, 'experimental': 1589, 'drug': 1340, 'ira': 2372, 'hire': 2120, 'patch': 3207, 'suddenly': 4306, 'immature': 2233, 'lame': 2509, 'sexual': 3946, 'nudity': 3039, 'circle': 766, 'reputation': 3690, 'dramatic': 1321, 'cold': 819, 'mainstream': 2702, 'press': 3407, 'downhill': 1309, 'jim': 2422, 'moon': 2891, 'drift': 1330, 'marketing': 2735, 'theater': 4449, 'chuckle': 758, 'making': 2709, 'unnecessary': 4685, 'chemistry': 729, 'conversation': 947, 'acceptable': 17, 'anger': 178, 'hilarious': 2115, 'humour': 2191, 'artsy': 254, 'demand': 1145, 'loser': 2658, 'bird': 445, 'titanic': 4518, 'drawn': 1325, 'profanity': 3443, 'beneath': 421, 'fair': 1630, 'share': 3961, 'appeal': 216, 'vulgar': 4807, 'offensive': 3067, 'likeable': 2594, 'lower': 2673, 'swear': 4356, 'sexuality': 3947, 'grass': 1970, 'altogether': 148, 'tragic': 4564, 'scott': 3874, 'wont': 4931, 'collect': 824, 'depress': 1155, 'tackle': 4372, 'moron': 2897, 'smile': 4078, 'mel': 2790, 'there': 4457, 'hearing': 2073, 'isnt': 2382, 'win': 4902, 'spent': 4159, 'thankful': 4445, 'excess': 1562, 'inspirational': 2308, 'illustrated': 2224, 'anecdote': 176, 'north': 3024, 'thirty': 4471, 'phrase': 3273, 'stitch': 4235, 'vital': 4793, 'artwork': 255, 'feast': 1666, 'dynamic': 1366, 'accompany': 24, 'wan': 4817, 'exotic': 1578, 'whimsical': 4878, 'lovely': 2669, 'host': 2168, 'protagonist': 3472, 'narrator': 2948, 'greek': 1976, 'lengthy': 2565, 'richly': 3736, 'diverse': 1277, 'seek': 3903, 'preserve': 3405, 'tradition': 4561, 'interact': 2335, 'social': 4090, 'environment': 1491, 'delve': 1144, 'sin': 4021, 'whenever': 4874, 'habit': 2012, 'judge': 2441, 'forever': 1787, 'account': 28, 'religion': 3654, 'stereotypical': 4222, 'suitable': 4316, 'disrespect': 1264, 'witness': 4922, 'jean': 2410, 'president': 3406, 'kennedy': 2462, 'article': 249, 'lady': 2506, 'jfk': 2421, 'http': 2182, 'location': 2638, 'conspiracy': 919, 'government': 1952, 'statement': 4208, 'tap': 4382, 'nonsense': 3019, 'physic': 3274, 'department': 1151, 'mad': 2692, 'ramblings': 3546, 'sum': 4317, 'physically': 3276, 'defy': 1127, 'debunk': 1096, 'furthermore': 1859, 'mixed': 2863, 'insane': 2301, 'evidence': 1539, 'pas': 3198, 'sword': 4362, 'december': 1100, 'recieved': 3601, 'absolutly': 8, 'confident': 901, 'stainless': 4192, 'steel': 4215, 'buddy': 574, 'symbol': 4363, 'blade': 454, 'fraud': 1821, 'adaptation': 52, 'gibberish': 1910, 'convert': 948, 'curve': 1047, 'bought': 508, 'update': 4697, 'customer': 1050, 'gap': 1876, 'heaven': 2079, 'scent': 3857, 'crush': 1029, 'recommended': 3609, 'nicely': 2991, 'slap': 4054, 'method': 2816, 'possibility': 3358, 'gault': 1884, 'uncle': 4646, 'investigation': 2364, 'york': 4988, 'affair': 88, 'honesty': 2148, 'adjective': 63, 'apparent': 214, 'suffer': 4308, 'tripe': 4599, 'implausible': 2239, 'understandable': 4654, 'brain': 523, 'sixth': 4038, 'labor': 2500, 'bizarre': 452, 'gut': 2007, 'factual': 1624, 'integrity': 2325, 'pale': 3172, 'ignorant': 2215, 'regard': 3631, 'profile': 3446, 'thumb': 4490, 'pit': 3293, 'meaningless': 2773, 'sympathetic': 4365, 'conflict': 903, 'imitation': 2232, 'pile': 3284, 'remainder': 3658, 'table': 4371, 'disturbing': 1275, 'inconsistent': 2263, 'scary': 3853, 'emotionally': 1442, 'contrive': 941, 'temple': 4414, 'intelligence': 2328, 'medical': 2781, 'virginia': 4782, 'whose': 4885, 'frozen': 1842, 'central': 689, 'park': 3190, 'terrify': 4431, 'accuracy': 29, 'lacking': 2504, 'storyteller': 4248, 'kindle': 2474, 'fireplace': 1721, 'yank': 4972, 'doc': 1283, 'plausible': 3309, 'involved': 2369, 'genius': 1898, 'engineer': 1465, 'stilted': 4231, 'oil': 3075, 'hollow': 2135, 'ring': 3745, 'churn': 761, 'profit': 3447, 'terror': 4433, 'killing': 2471, 'bluegrass': 474, 'prove': 3476, 'progress': 3453, 'diagnose': 1193, 'fatal': 1657, 'heal': 2067, 'thousand': 4480, 'grant': 1967, 'retain': 3715, 'noisy': 3012, 'vibration': 4763, 'massager': 2749, 'objective': 3046, 'finding': 1712, 'grasp': 1969, 'exposition': 1599, 'principle': 3424, 'exciting': 1568, 'desert': 1165, 'afraid': 92, 'hey': 2103, 'bitter': 451, 'friday': 1833, 'knowledgeable': 2490, 'bank': 345, 'civilization': 773, 'ramble': 3544, 'hunter': 2195, 'port': 3349, 'ark': 237, 'giant': 1909, 'map': 2726, 'browse': 561, 'disappear': 1233, 'superficial': 4323, 'scientific': 3866, 'lincoln': 2606, 'perception': 3241, 'belongs': 414, 'hazlitt': 2060, 'understood': 4656, 'economic': 1388, 'intervention': 2347, 'working': 4939, 'vote': 4805, 'economy': 1390, 'capitalism': 636, 'merit': 2808, 'significantly': 4007, 'ideal': 2208, 'dismal': 1259, 'serve': 3933, 'third': 4470, 'swing': 4360, 'conservative': 914, 'rant': 3553, 'relevant': 3650, 'crisis': 1015, 'politician': 3337, 'classroom': 782, 'failure': 1629, 'scam': 3844, 'definition': 1123, 'outdated': 3127, 'reflect': 3624, 'moreover': 2894, 'settle': 3938, 'broken': 558, 'mental': 2800, 'pro': 3433, 'damn': 1065, 'benefit': 422, 'cave': 675, 'union': 4672, 'indication': 2275, 'amazingly': 155, 'university': 4678, 'chicago': 732, 'crazy': 1000, 'march': 2728, 'fundamental': 1854, 'overwhelming': 3151, 'majority': 2705, 'cite': 769, 'education': 1399, 'growth': 1991, 'revolutionary': 3726, 'directly': 1227, 'plague': 3299, 'foundation': 1806, 'von': 4803, 'credit': 1008, 'depression': 1158, 'elementary': 1421, 'fellow': 1679, 'loss': 2659, 'freedom': 1825, 'fancy': 1644, 'consequence': 913, 'tremendous': 4588, 'tax': 4388, 'expense': 1584, 'micro': 2821, 'necessary': 2966, 'measure': 2775, 'aka': 113, 'enemy': 1460, 'narration': 2946, 'tedious': 4402, 'donate': 1298, 'critique': 1021, 'popular': 3345, 'agenda': 98, 'rarely': 3558, 'omit': 3081, 'contrary': 937, 'grain': 1958, 'salt': 3817, 'health': 2068, 'dangerous': 1070, 'myth': 2940, 'context': 932, 'corporate': 965, 'trade': 4560, 'anti': 198, 'preach': 3383, 'net': 2979, 'et': 1518, 'hammer': 2023, 'blind': 466, 'utopian': 4724, 'anytime': 205, 'rehash': 3639, 'worship': 4946, 'tout': 4551, 'enlighten': 1475, 'sanity': 3827, 'casual': 664, 'spring': 4181, 'premise': 3397, 'lifetime': 2585, 'prophetic': 3469, 'surprisingly': 4345, 'paul': 3216, 'laughable': 2529, 'skim': 4047, 'mislead': 2854, 'faulty': 1661, 'apparently': 215, 'promote': 3458, 'duty': 1363, 'equation': 1498, 'analyze': 170, 'narrow': 2949, 'introductory': 2357, 'importantly': 2244, 'recycle': 3613, 'pepper': 3237, 'concerned': 892, 'secretly': 3897, 'instrument': 2322, 'velvet': 4749, 'techno': 4400, 'electronica': 1418, 'airwave': 112, 'tire': 4514, 'ho': 2128, 'dumb': 1356, 'im': 2226, 'stellar': 4218, 'invite': 2367, 'vary': 4740, 'musical': 2931, 'animated': 182, 'punch': 3493, 'station': 4209, 'transport': 4575, 'definitly': 1125, 'tripod': 4600, 'bag': 335, 'circuit': 767, 'anderson': 174, 'poverty': 3371, 'sent': 3920, 'journey': 2437, 'sorrow': 4125, 'daniel': 1071, 'hidden': 2105, 'lyrical': 2686, 'constant': 920, 'nineteen': 3003, 'contribution': 940, 'minority': 2847, 'incomprehensible': 2262, 'anthology': 196, 'christian': 751, 'torso': 4540, 'cincher': 762, 'boning': 488, 'chest': 730, 'wire': 4912, 'bra': 520, 'whereas': 4875, 'custom': 1049, 'cloth': 804, 'squeem': 4184, 'shapewear': 3960, 'bone': 487, 'butt': 601, 'hardly': 2042, 'firm': 1723, 'vintage': 4776, 'expensive': 1585, 'clothes': 805, 'liner': 2608, 'comfortably': 840, 'layer': 2535, 'measurement': 2776, 'posture': 3365, 'associate': 271, 'slim': 4067, 'reduce': 3619, 'clothing': 806, 'wedding': 4857, 'opt': 3100, 'bust': 599, 'tighter': 4498, 'def': 1112, 'boob': 490, 'dd': 1085, 'everyday': 1533, 'belly': 411, 'pregnancy': 3392, 'sick': 3999, 'literally': 2624, 'desk': 1169, 'pleasant': 3316, 'bruise': 565, 'flexible': 1748, 'unbearable': 4644, 'bulge': 585, 'spare': 4141, 'fold': 1770, 'trim': 4597, 'shirt': 3978, 'lift': 2586, 'upset': 4704, 'miracle': 2850, 'squeeze': 4185, 'fraction': 1810, 'lb': 2538, 'tummy': 4613, 'thou': 4476, 'tank': 4381, 'sweat': 4357, 'tall': 4379, 'mid': 2823, 'inner': 2297, 'cotton': 971, 'pure': 3498, 'occasion': 3054, 'birth': 446, 'specifically': 4152, 'bulky': 586, 'hideous': 2107, 'sizing': 4041, 'speed': 4156, 'surgery': 4340, 'stomach': 4238, 'theres': 4459, 'underneath': 4651, 'breathing': 537, 'bell': 410, 'snug': 4087, 'concentrate': 889, 'breast': 534, 'believer': 408, 'pregnant': 3393, 'pinch': 3289, 'ur': 4706, 'downside': 1312, 'portion': 3351, 'sew': 3944, 'satisfied': 3834, 'sock': 4093, 'bend': 420, 'upper': 4702, 'defeat': 1113, 'increase': 2266, 'bent': 423, 'repair': 3677, 'gym': 2009, 'diminish': 1219, 'visible': 4786, 'pink': 3290, 'spine': 4165, 'severe': 3942, 'injury': 2295, 'vanity': 4736, 'surpass': 4341, 'suprise': 4332, 'merchandise': 2806, 'absorb': 9, 'abandon': 1, 'torture': 4541, 'instant': 2316, 'ease': 1379, 'loop': 2652, 'seam': 3889, 'snap': 4084, 'eventually': 1528, 'visually': 4791, 'divide': 1279, 'ouch': 3123, 'daily': 1060, 'rod': 3763, 'painfully': 3166, 'ultimately': 4637, 'grandmother': 1965, 'encourage': 1455, 'regain': 3630, 'trap': 4576, 'diet': 1207, 'anticipate': 199, 'fitting': 1733, 'near': 2962, 'fly': 1765, 'steam': 4214, 'badly': 334, 'stab': 4186, 'havent': 2058, 'hence': 2093, 'reminder': 3665, 'occur': 3057, 'slight': 4065, 'stamp': 4195, 'disease': 1250, 'terribly': 4429, 'gross': 1987, 'rear': 3585, 'sometime': 4108, 'aircraft': 109, 'marie': 2731, 'doll': 1293, 'owe': 3152, 'seemingly': 3905, 'permanent': 3250, 'china': 740, 'german': 1905, 'logan': 2641, 'jimmy': 2423, 'ponder': 3339, 'nine': 3002, 'unwatchable': 4694, 'cheese': 726, 'scholarly': 3861, 'mold': 2873, 'distinct': 1271, 'mass': 2747, 'formal': 1791, 'gold': 1936, 'pray': 3380, 'overcome': 3138, 'vinyl': 4777, 'rhapsody': 3730, 'caan': 610, 'higgins': 2108, 'danger': 1069, 'publisher': 3486, 'sean': 3890, 'justice': 2453, 'competition': 867, 'british': 552, 'legal': 2558, 'entertainment': 1482, 'slog': 4069, 'dillon': 1216, 'dozen': 1314, 'para': 3180, 'expose': 1598, 'promising': 3457, 'smoke': 4080, 'generous': 1896, 'sequel': 3926, 'guilty': 2001, 'status': 4211, 'oops': 3086, 'aspire': 266, 'strangely': 4253, 'editor': 1397, 'dialog': 1195, 'kate': 2456, 'reaction': 3570, 'rough': 3779, 'curiosity': 1041, 'tension': 4423, 'executive': 1572, 'cliche': 790, 'guard': 1994, 'agent': 99, 'target': 4384, 'shoot': 3982, 'timing': 4509, 'wrestle': 4957, 'silent': 4009, 'jefferson': 2412, 'tired': 4515, 'extension': 1605, 'meeting': 2787, 'spy': 4182, 'board': 479, 'cartoon': 656, 'heritage': 2097, 'pose': 3355, 'jacket': 2393, 'dust': 1362, 'harry': 2050, 'screenplay': 3879, 'shred': 3994, 'shall': 3956, 'uninspired': 4670, 'deadline': 1088, 'critical': 1018, 'eagle': 1369, 'sudden': 4305, 'saga': 3812, 'bernstein': 425, 'precede': 3384, 'nerve': 2977, 'irish': 2374, 'hack': 2013, 'enormous': 1476, 'stinker': 4234, 'schwartz': 3863, 'los': 2656, 'rabbit': 3527, 'ballroom': 340, 'vega': 4743, 'duke': 1354, 'shine': 3973, 'destine': 1174, 'greatness': 1974, 'herb': 2096, 'precise': 3386, 'plant': 3305, 'stream': 4258, 'scanner': 3846, 'vista': 4789, 'scan': 3845, 'firmware': 1725, 'jane': 2398, 'universe': 4677, 'scarlett': 3851, 'ridiculously': 3741, 'scarlet': 3850, 'hawthorne': 2059, 'underlying': 4650, 'atlas': 278, 'huxley': 2201, 'vacation': 4727, 'puritan': 3500, 'confess': 899, 'physical': 3275, 'reccomend': 3592, 'auto': 304, 'dolby': 1292, 'mundane': 2926, 'allusion': 132, 'hester': 2102, 'needle': 2969, 'us': 4709, 'convey': 949, 'overrate': 3145, 'dickens': 1202, 'boredom': 500, 'fahrenheit': 1626, 'footnote': 1781, 'nonetheless': 3016, 'gripping': 1983, 'neat': 2964, 'essence': 1511, 'breathtaking': 538, 'navigate': 2958, 'ebook': 1386, 'nathaniel': 2951, 'strength': 4260, 'weakness': 4848, 'cop': 957, 'rigid': 3744, 'psychological': 3481, 'divorce': 1280, 'adultery': 74, 'punishment': 3494, 'reprint': 3689, 'confirm': 902, 'pretentious': 3410, 'era': 1501, 'mildly': 2830, 'hi': 2104, 'highschool': 2112, 'assignment': 270, 'captivating': 640, 'worse': 4945, 'aunt': 297, 'ugh': 4633, 'honor': 2149, 'wordy': 4935, 'dirt': 1229, 'empathize': 1443, 'tragedy': 4563, 'effectively': 1405, 'reccommend': 3593, 'mainly': 2701, 'historically': 2124, 'pill': 3285, 'timely': 4507, 'cliff': 794, 'robot': 3758, 'wasted': 4837, 'indeed': 2269, 'beg': 396, 'cease': 677, 'unfamiliar': 4661, 'dislike': 1258, 'empty': 1450, 'worst': 4947, 'overly': 3142, 'humanity': 2187, 'filler': 1702, 'cynical': 1056, 'vice': 4765, 'awhile': 322, 'assign': 269, 'cliched': 791, 'masterful': 2752, 'literary': 2625, 'rule': 3791, 'shell': 3967, 'belong': 413, 'electronic': 1417, 'formatting': 1793, 'cheat': 723, 'irritate': 2379, 'spirit': 4167, 'paperback': 3178, 'engross': 1469, 'flawless': 1743, 'guilt': 2000, 'irony': 2377, 'exceptional': 1560, 'fee': 1669, 'yawn': 4974, 'childish': 738, 'shadow': 3951, 'headache': 2064, 'jeff': 2411, 'ap': 209, 'hint': 2118, 'quote': 3524, 'significant': 4006, 'inability': 2252, 'revelation': 3719, 'fist': 1730, 'court': 983, 'unlikely': 4682, 'spider': 4161, 'exceptionally': 1561, 'surprising': 4344, 'uninteresting': 4671, 'sucker': 4303, 'forth': 1797, 'sophomore': 4122, 'degree': 1129, 'exam': 1549, 'freakin': 1823, 'afterwards': 96, 'reject': 3641, 'exposure': 1600, 'versus': 4757, 'refreshing': 3627, 'construct': 922, 'noble': 3008, 'applicable': 220, 'ought': 3124, 'peel': 3228, 'wander': 4818, 'redemption': 3617, 'teenager': 4405, 'font': 1776, 'happens': 2033, 'sappy': 3830, 'victorian': 4767, 'sue': 4307, 'ignorance': 2214, 'okay': 3077, 'quiz': 3523, 'slowly': 4073, 'lightly': 2589, 'lock': 2639, 'attic': 286, 'mentally': 2802, 'sandra': 3826, 'peice': 3230, 'tempt': 4417, 'therapy': 4456, 'twisted': 4626, 'cure': 1039, 'insomnia': 2306, 'bloody': 470, 'junior': 2451, 'patient': 3211, 'rank': 3552, 'readily': 3574, 'october': 3059, 'luck': 2676, 'meaningful': 2772, 'ashamed': 258, 'harsh': 2051, 'sleeping': 4061, 'stress': 4261, 'thier': 4463, 'taught': 4387, 'orwell': 3118, 'bradbury': 521, 'attack': 282, 'dare': 1072, 'oppression': 3098, 'superior': 4324, 'arthur': 248, 'visual': 4790, 'aid': 105, 'moore': 2892, 'poetic': 3328, 'cram': 992, 'extend': 1603, 'renew': 3674, 'pride': 3418, 'fest': 1686, 'favor': 1662, 'dreary': 1328, 'dreadful': 1326, 'aim': 106, 'miserably': 2852, 'numerous': 3041, 'composition': 881, 'determine': 1182, 'suffers': 4309, 'bush': 597, 'prison': 3429, 'rain': 3539, 'proof': 3462, 'suprised': 4333, 'senior': 3914, 'dual': 1346, 'meaning': 2771, 'tomato': 4527, 'anthony': 197, 'wilbur': 4895, 'ft': 1847, 'listing': 2622, 'substandard': 4292, 'cent': 687, 'suction': 4304, 'cleaning': 786, 'feed': 1670, 'feeding': 1673, 'compartment': 862, 'knife': 2482, 'tray': 4582, 'everyman': 1534, 'se': 3886, 'asia': 259, 'lao': 2514, 'august': 296, 'australian': 300, 'sloppy': 4070, 'functional': 1853, 'yep': 4981, 'meter': 2815, 'probe': 3435, 'convince': 950, 'atrocious': 280, 'wouldnt': 4953, 'kiss': 2478, 'jerry': 2416, 'lewis': 2575, 'depressing': 1157, 'holiday': 2134, 'cancel': 625, 'dissapointment': 1267, 'receipt': 3594, 'rude': 3788, 'discount': 1243, 'rack': 3531, 'pretend': 3409, 'bomb': 485, 'flop': 1756, 'simpson': 4020, 'drunk': 1343, 'whitney': 4882, 'allen': 129, 'crack': 990, 'santa': 3829, 'stuck': 4273, 'teeth': 4406, 'extent': 1607, 'billy': 438, 'remotely': 3669, 'annoying': 192, 'hairy': 2017, 'diehard': 1206, 'downright': 1311, 'stargate': 4202, 'signal': 4004, 'gas': 1883, 'pulse': 3490, 'flute': 1764, 'sax': 3841, 'storm': 4244, 'jones': 2434, 'quartet': 3509, 'william': 4898, 'dave': 1081, 'inappropriate': 2256, 'shut': 3996, 'duck': 1349, 'edward': 1401, 'rail': 3538, 'yer': 4982, 'flag': 1736, 'reasonable': 3587, 'elvis': 1430, 'deborah': 1095, 'drummer': 1342, 'le': 2540, 'shove': 3991, 'spinout': 4166, 'king': 2475, 'diane': 1199, 'height': 2084, 'una': 4640, 'cinema': 763, 'redeeming': 3616, 'chase': 718, 'erotic': 1503, 'listenable': 2618, 'motion': 2903, 'properly': 3466, 'expire': 1591, 'assembly': 268, 'ebay': 1385, 'separately': 3924, 'shade': 3950, 'fortune': 1800, 'hardware': 2043, 'knob': 2485, 'grind': 1980, 'crank': 993, 'grinder': 1981, 'operate': 3091, 'shoddy': 3980, 'brush': 566, 'jensen': 2414, 'pitch': 3294, 'accessible': 19, 'psychology': 3482, 'industry': 2280, 'intellectual': 2326, 'influential': 2286, 'teaching': 4394, 'fortunate': 1798, 'phd': 3261, 'document': 1285, 'fuzzy': 1863, 'percent': 3240, 'unacceptable': 4642, 'unfortunate': 4664, 'fluff': 1761, 'breathe': 536, 'affect': 89, 'concern': 891, 'academy': 14, 'announce': 189, 'oscar': 3120, 'bible': 433, 'fifteen': 1693, 'journalist': 2436, 'minimal': 2842, 'hype': 2202, 'definite': 1121, 'metallica': 2813, 'garage': 1877, 'successfully': 4301, 'twenty': 4622, 'diagram': 1194, 'instructor': 2321, 'scale': 3843, 'violet': 4780, 'purple': 3501, 'promptly': 3460, 'training': 4568, 'nervous': 2978, 'photography': 3272, 'louis': 2663, 'groove': 1986, 'adapt': 51, 'rhyme': 3731, 'cube': 1033, 'gadget': 1867, 'refill': 3623, 'lip': 2612, 'lunchbox': 2683, 'stain': 4191, 'crocodile': 1022, 'lunch': 2682, 'drink': 1332, 'soup': 4133, 'breath': 535, 'ban': 341, 'weave': 4853, 'temptation': 4418, 'closer': 802, 'perfection': 3243, 'evolve': 1545, 'descent': 1160, 'bum': 588, 'mediocre': 2784, 'mar': 2727, 'johnson': 2430, 'bland': 457, 'bash': 357, 'proud': 3475, 'biological': 444, 'wilson': 4901, 'lp': 2675, 'dated': 1079, 'howard': 2177, 'anne': 187, 'epic': 1493, 'starship': 4204, 'slick': 4063, 'annie': 188, 'mtv': 2919, 'ann': 186, 'milk': 2833, 'career': 646, 'wolf': 4925, 'rockin': 3762, 'rocker': 3760, 'sorely': 4124, 'slave': 4056, 'mistress': 2861, 'truely': 4606, 'corny': 964, 'durability': 1360, 'magnificent': 2698, 'complexity': 874, 'sonic': 4115, 'progressive': 3454, 'rhythm': 3732, 'spectrum': 4154, 'velcro': 4748, 'walker': 4814, 'albert': 119, 'collins': 828, 'sam': 3818, 'charlie': 713, 'hall': 2020, 'rage': 3536, 'jazzy': 2409, 'clock': 798, 'peanut': 3223, 'scripture': 3883, 'christ': 750, 'hd': 2061, 'sync': 4367, 'mouth': 2912, 'warner': 4826, 'whim': 4877, 'eve': 1524, 'quest': 3512, 'gang': 1875, 'broadcast': 555, 'blu': 472, 'ray': 3568, 'capacity': 634, 'appal': 213, 'retail': 3713, 'speaking': 4146, 'babe': 326, 'wise': 4915, 'eternal': 1520, 'charles': 712, 'crew': 1011, 'jesus': 2417, 'bless': 464, 'withstand': 4921, 'passage': 3200, 'crisp': 1016, 'deluxe': 1143, 'limitation': 2603, 'gentle': 1900, 'speech': 4155, 'uneven': 4658, 'thankfully': 4446, 'spec': 4148, 'min': 2837, 'couch': 972, 'soooo': 4120, 'widescreen': 4891, 'creation': 1003, 'upside': 4705, 'connect': 910, 'fifth': 1694, 'afford': 90, 'mattress': 2760, 'powerbook': 3373, 'adapter': 53, 'amp': 164, 'ibook': 2204, 'macally': 2689, 'charging': 711, 'ac': 12, 'apple': 219, 'cycle': 1055, 'fiddle': 1691, 'connection': 911, 'indicator': 2276, 'better': 429, 'fluke': 1762, 'generate': 1893, 'bargain': 351, 'brick': 543, 'handy': 2028, 'adaptor': 54, 'connector': 912, 'resume': 3712, 'sufficient': 4310, 'continuously': 935, 'firmly': 1724, 'prone': 3461, 'drawback': 1323, 'aluminum': 149, 'operation': 3093, 'buzz': 607, 'await': 314, 'request': 3691, 'initial': 2293, 'quiet': 3517, 'questionable': 3514, 'orange': 3103, 'airport': 111, 'weigh': 4861, 'affordable': 91, 'glance': 1920, 'electrical': 1416, 'budget': 575, 'sacrifice': 3805, 'th': 4442, 'following': 1773, 'transformer': 4571, 'idiot': 2212, 'satisfaction': 3833, 'backpack': 331, 'outer': 3129, 'suspect': 4352, 'disconnect': 1241, 'hassle': 2052, 'obtain': 3051, 'resolve': 3699, 'usage': 4712, 'lemon': 2561, 'candy': 627, 'added': 56, 'oem': 3065, 'justify': 2454, 'lighting': 2588, 'unstable': 4690, 'pictured': 3282, 'temporary': 4416, 'compact': 857, 'missing': 2858, 'puppy': 3496, 'link': 2609, 'overprice': 3144, 'whine': 4879, 'shaft': 3952, 'odds': 3061, 'binchy': 440, 'fuss': 1860, 'discourage': 1244, 'silver': 4011, 'poignant': 3330, 'observation': 3049, 'teller': 4409, 'marvelous': 2744, 'nephew': 2976, 'artistic': 253, 'whip': 4880, 'busy': 600, 'improvement': 2251, 'jumping': 2448, 'scissors': 3869, 'toddler': 4521, 'pin': 3288, 'bead': 379, 'sand': 3822, 'scifi': 3868, 'spiritual': 4168, 'dude': 1351, 'bathroom': 368, 'booklet': 492, 'il': 2218, 'tempo': 4415, 'del': 1131, 'empire': 1448, 'dire': 1223, 'mike': 2828, 'un': 4639, 'west': 4866, 'wine': 4906, 'por': 3347, 'en': 1451, 'ella': 1426, 'excelente': 1554, 'ma': 2687, 'es': 1506, 'brian': 542, 'rust': 3800, 'manufacture': 2723, 'poem': 3326, 'verse': 4755, 'leader': 2542, 'cannon': 628, 'expedition': 1583, 'river': 3752, 'fort': 1796, 'gun': 2006, 'trek': 4587, 'install': 2312, 'mount': 2909, 'resonate': 3700, 'mechanical': 2778, 'core': 961, 'evident': 1540, 'traveler': 4580, 'scenery': 3856, 'odysseus': 3063, 'ulysses': 4638, 'infrared': 2291, 'vibrate': 4762, 'flashlight': 1739, 'bulb': 584, 'heating': 2078, 'lennon': 2566, 'unfair': 4660, 'occasional': 3055, 'eddie': 1392, 'horizon': 2157, 'latin': 2526, 'funk': 1856, 'texture': 4441, 'testament': 4438, 'circumstance': 768, 'aussie': 298, 'shower': 3993, 'monkey': 2880, 'creep': 1009, 'writen': 4959, 'photograph': 3271, 'reunion': 3717, 'overdue': 3140, 'webb': 4855, 'dimension': 1217, 'glen': 1922, 'campbell': 622, 'moving': 2916, 'upbeat': 4695, 'dwarf': 1365, 'interpretation': 2346, 'stunning': 4280, 'organize': 3111, 'amish': 160, 'therapist': 4455, 'translate': 4573, 'confused': 907, 'platform': 3308, 'ego': 1408, 'commentary': 847, 'accomplishment': 26, 'enthral': 1483, 'disgrace': 1251, 'remark': 3660, 'humble': 2188, 'cooker': 954, 'uplifting': 4700, 'importance': 2242, 'simplicity': 4017, 'quilt': 3518, 'sentiment': 3922, 'insightful': 2305, 'east': 1381, 'marine': 2732, 'closely': 801, 'leak': 2546, 'meal': 2769, 'locally': 2636, 'output': 3133, 'celtic': 682, 'wipe': 4911, 'chore': 747, 'spill': 4163, 'tried': 4594, 'bunny': 591, 'shaker': 3954, 'detect': 1179, 'chunk': 759, 'invasion': 2359, 'coherent': 818, 'burmese': 593, 'breed': 539, 'meat': 2777, 'chicken': 734, 'raw': 3567, 'characteristic': 707, 'beloved': 415, 'gorgeous': 1947, 'trace': 4558, 'enable': 1452, 'napoleon': 2945, 'biography': 443, 'differ': 1208, 'emperor': 1445, 'praise': 3378, 'criticize': 1020, 'memoir': 2796, 'lab': 2497, 'sinister': 4030, 'underground': 4649, 'haha': 2014, 'ghost': 1908, 'setup': 3939, 'housing': 2175, 'nonsensical': 3020, 'rural': 3795, 'running': 3794, 'urban': 4707, 'spirituality': 4169, 'fifty': 1695, 'catherine': 671, 'comfort': 838, 'cream': 1001, 'haunt': 2056, 'revisit': 3724, 'boys': 519, 'dishwasher': 1255, 'headset': 2066, 'bluetooth': 475, 'motorola': 2908, 'wannabe': 4819, 'prepared': 3401, 'clip': 797, 'harmony': 2047, 'songwriter': 4114, 'camp': 620, 'inventory': 2362, 'taylor': 4389, 'boat': 480, 'pocket': 3325, 'arrange': 241, 'immortal': 2236, 'chill': 739, 'thrash': 4481, 'excellence': 1556, 'northern': 3025, 'dome': 1296, 'xmas': 4968, 'diameter': 1197, 'google': 1944, 'prep': 3398, 'density': 1149, 'brazil': 529, 'scope': 3871, 'companion': 858, 'experiment': 1588, 'tilt': 4502, 'adjustment': 66, 'opener': 3088, 'drill': 1331, 'paste': 3205, 'dolly': 1295, 'parton': 3196, 'sustain': 4355, 'delivers': 1139, 'sugar': 4311, 'independent': 2270, 'lend': 2562, 'unforgettable': 4663, 'fond': 1774, 'soar': 4089, 'lhasa': 2576, 'sings': 4029, 'wrench': 4956, 'kurt': 2494, 'intimate': 2350, 'diversity': 1278, 'originality': 3114, 'tango': 4380, 'ala': 115, 'subsequent': 4290, 'musicianship': 2933, 'modest': 2870, 'abroad': 4, 'spooky': 4175, 'knight': 2483, 'phillips': 3266, 'accurately': 31, 'audiobook': 294, 'accent': 15, 'climb': 796, 'elizabeth': 1425, 'loyalty': 2674, 'whats': 4871, 'sir': 4032, 'simon': 4014, 'laughter': 2530, 'mankind': 2718, 'bubble': 569, 'workmanship': 4940, 'holy': 2140, 'casting': 662, 'standout': 4198, 'chat': 719, 'bolt': 484, 'route': 3781, 'india': 2272, 'sport': 4176, 'headphone': 2065, 'eidos': 1410, 'gameplay': 1872, 'tomb': 4528, 'raider': 3537, 'delay': 1132, 'lara': 2517, 'horrid': 2161, 'stall': 4194, 'blank': 458, 'ram': 3543, 'turkey': 4615, 'controller': 943, 'sensitive': 3917, 'fence': 1685, 'news': 2986, 'cutting': 1053, 'preview': 3413, 'franchise': 1814, 'depressed': 1156, 'playable': 3311, 'sticker': 4227, 'unusable': 4692, 'glitch': 1925, 'bat': 365, 'explosion': 1597, 'fighting': 1698, 'surroundings': 4349, 'resident': 3697, 'washer': 4832, 'deck': 1104, 'chemical': 728, 'network': 2980, 'retailer': 3714, 'disposable': 1263, 'motor': 2906, 'absent': 5, 'updated': 4698, 'impact': 2238, 'fishing': 1729, 'buggy': 580, 'alley': 130, 'relevance': 3649, 'desperate': 1171, 'forum': 1802, 'foreign': 1785, 'watson': 4843, 'desperately': 1172, 'succeed': 4298, 'merely': 2807, 'polish': 3335, 'erotica': 1504, 'inaccurate': 2254, 'realise': 3578, 'lust': 2684, 'devote': 1189, 'fragile': 1811, 'staple': 4199, 'sarah': 3831, 'devoid': 1188, 'backdrop': 329, 'wierd': 4893, 'wedge': 4858, 'dawn': 1083, 'leaf': 2544, 'oversized': 3148, 'clamp': 775, 'round': 3780, 'april': 228, 'ace': 32, 'buddhism': 572, 'inevitably': 2281, 'entirety': 1487, 'gifted': 1913, 'notion': 3032, 'documentary': 1286, 'planning': 3304, 'vol': 4801, 'restore': 3710, 'shoulder': 3989, 'rope': 3776, 'escape': 1508, 'reverse': 3721, 'anchor': 172, 'logical': 2643, 'harder': 2041, 'limp': 2605, 'code': 816, 'brutal': 567, 'mayhem': 2765, 'vein': 4747, 'interface': 2340, 'army': 239, 'arch': 230, 'strategy': 4256, 'demo': 1146, 'terrain': 4427, 'expansion': 1580, 'few': 1687, 'notch': 3027, 'tribe': 4591, 'intro': 2354, 'partial': 3192, 'listens': 2621, 'deaf': 1089, 'reggae': 3633, 'alert': 123, 'cousin': 985, 'enjoyed': 1473, 'buddhist': 573, 'obnoxious': 3047, 'humorous': 2190, 'quirky': 3520, 'reread': 3693, 'tremendously': 4589, 'blessing': 465, 'gypsy': 2010, 'tick': 4493, 'leadership': 2543, 'lace': 2501, 'strand': 4251, 'cage': 613, 'martin': 2742, 'discovery': 1246, 'belva': 417, 'consume': 924, 'stable': 4187, 'immensely': 2235, 'gerald': 1904, 'breakdown': 532, 'strictly': 4263, 'decorative': 1107, 'toss': 4542, 'bin': 439, 'golf': 1938, 'filter': 1705, 'unlock': 4684, 'roller': 3766, 'coaster': 812, 'bruce': 563, 'martial': 2741, 'relation': 3643, 'discipline': 1240, 'grey': 1978, 'harlequin': 2045, 'melissa': 2791, 'undoubtedly': 4657, 'delete': 1133, 'blast': 460, 'virus': 4785, 'midi': 2825, 'countless': 977, 'component': 878, 'behave': 401, 'su': 4286, 'como': 856, 'examination': 1550, 'glue': 1930, 'accessory': 20, 'bow': 511, 'indian': 2273, 'minus': 2848, 'intent': 2332, 'radiator': 3533, 'nickel': 2993, 'installation': 2313, 'comparison': 861, 'pan': 3174, 'lightness': 2590, 'nikon': 3001, 'usable': 4711, 'zoom': 4999, 'lens': 2567, 'disguise': 1252, 'hilditch': 2116, 'felicia': 1677, 'johnny': 2429, 'viewpoint': 4772, 'supplement': 4326, 'fi': 1688, 'faster': 1655, 'golden': 1937, 'coat': 813, 'pump': 3491, 'mug': 2923, 'liquid': 2614, 'thesis': 4461, 'monitor': 2878, 'adjustable': 65, 'crappy': 995, 'generic': 1895, 'refresh': 3626, 'marvel': 2743, 'profoundly': 3449, 'ministry': 2844, 'newly': 2984, 'alcohol': 121, 'representation': 3688, 'violent': 4779, 'origin': 3112, 'picky': 3280, 'leather': 2552, 'alarm': 116, 'monoxide': 2883, 'detector': 1181, 'vent': 4752, 'carpet': 651, 'ceiling': 679, 'pricey': 3417, 'approve': 227, 'curtain': 1046, 'beep': 394, 'emergency': 1437, 'dive': 1276, 'wisdom': 4914, 'brainless': 524, 'hum': 2185, 'neighbor': 2973, 'inspiring': 2310, 'journal': 2435, 'guidance': 1998, 'madonna': 2694, 'bored': 499, 'rose': 3777, 'dean': 1091, 'shout': 3990, 'whoever': 4883, 'watching': 4840, 'defect': 1114, 'valve': 4733, 'nipple': 3005, 'lane': 2512, 'launch': 2531, 'securely': 3900, 'subtitle': 4295, 'yoga': 4987, 'workbook': 4937, 'exhaust': 1574, 'tribute': 4592, 'riff': 3742, 'ironic': 2376, 'expression': 1602, 'xanth': 4966, 'unreadable': 4687, 'zombie': 4998, 'dale': 1061, 'elevator': 1423, 'beatles': 384, 'asian': 260, 'pool': 3341, 'coleman': 820, 'soviet': 4137, 'frightening': 1839, 'tightly': 4499, 'region': 3635, 'makeup': 2708, 'lesbian': 2568, 'consistent': 917, 'elastic': 1414, 'dot': 1304, 'tile': 4500, 'warmth': 4824, 'national': 2953, 'riddle': 3738, 'korean': 2492, 'vegetarian': 4745, 'cookbook': 953, 'pa': 3156, 'establish': 1514, 'nyc': 3044, 'briefly': 546, 'phenomenal': 3262, 'acknowledge': 35, 'diabetic': 1192, 'medication': 2782, 'diabetes': 1191, 'kudos': 2493, 'educate': 1398, 'peak': 3222, 'med': 2780, 'venus': 4754, 'identical': 2209, 'buff': 577, 'stalingrad': 4193, 'luftwaffe': 2679, 'aviation': 311, 'argentine': 233, 'dancing': 1068, 'dancer': 1067, 'routine': 3783, 'ranger': 3551, 'february': 1668, 'schedule': 3858, 'excellant': 1555, 'dede': 1108, 'amuse': 165, 'described': 1162, 'bd': 376, 'boxset': 516, 'spiderman': 4162, 'extraordinary': 1611, 'samsung': 3820, 'xbox': 4967, 'russian': 3799, 'andrew': 175, 'bold': 483, 'grainy': 1959, 'diamond': 1198, 'acid': 34, 'sympathy': 4366, 'wicca': 4886, 'invent': 2360, 'goddess': 1935, 'hutton': 2200, 'obscure': 3048, 'conduct': 898, 'firewire': 1722, 'september': 3925, 'ad': 49, 'tony': 4534, 'alittle': 127, 'ending': 1457, 'lake': 2508, 'pitchshifter': 3295, 'industrial': 2279, 'manager': 2715, 'scotland': 3873, 'canada': 624, 'ra': 3525, 'awe': 319, 'egyptian': 1409, 'amateurish': 152, 'challenging': 699, 'rewrite': 3729, 'liberty': 2578, 'washing': 4833, 'monumental': 2888, 'kirk': 2477, 'cameron': 619, 'ljs': 2632, 'gillian': 1915, 'popularity': 3346, 'gary': 1882, 'creature': 1006, 'communist': 854, 'haiku': 2015, 'van': 4735, 'handbook': 2025, 'poet': 3327, 'kerouac': 2463, 'skeptical': 4044, 'mothman': 2902, 'prophecy': 3468, 'keel': 2458, 'ufo': 4632, 'phenomenon': 3263, 'disjoint': 1256, 'sighting': 4002, 'albeit': 118, 'screenwriter': 3880, 'gordon': 1945, 'primarily': 3419, 'mighty': 2827, 'storytelling': 4249, 'letdown': 2572, 'controversial': 944, 'admittedly': 69, 'beast': 382, 'london': 2647, 'parallel': 3184, 'incoherent': 2260, 'happening': 2032, 'scenario': 3854, 'acquire': 38, 'entitle': 1488, 'goofy': 1943, 'stormy': 4245, 'monster': 2884, 'sincere': 4023, 'copyright': 959, 'outrage': 3134, 'innovative': 2299, 'pulp': 3489, 'racism': 3529, 'fighter': 1697, 'lene': 2563, 'analog': 168, 'replay': 3684, 'surrender': 4347, 'censorship': 686, 'anime': 184, 'kettle': 2464, 'suicide': 4314, 'math': 2757, 'newman': 2985, 'definitive': 1124, 'debate': 1094, 'nightwish': 3000, 'faithful': 1634, 'guardian': 1995, 'eva': 1523, 'bob': 481, 'thermometer': 4460, 'frequent': 1828, 'temp': 4411, 'hospital': 2167, 'tent': 4424, 'alice': 124, 'criticism': 1019, 'module': 2871, 'bdsm': 377, 'pre': 3382, 'maria': 2729, 'inadequate': 2255, 'emblem': 1436, 'snmp': 4085, 'lately': 2524, 'tooth': 4536, 'randomly': 3549, 'frankenstein': 1818, 'koontz': 2491, 'repetition': 3680, 'ally': 133, 'prelude': 3396, 'madness': 2693, 'canon': 629, 'rewind': 3728, 'posting': 3364, 'illumination': 2222, 'sixty': 4039, 'differently': 1211, 'nirvana': 3006, 'cobain': 814, 'hardcore': 2039, 'bean': 380, 'estate': 1515, 'courtney': 984, 'catalogue': 667, 'boxed': 515, 'yea': 4975, 'tho': 4472, 'recover': 3612, 'doug': 1307, 'mud': 2921, 'fitness': 1732, 'survival': 4350, 'hiking': 2114, 'drip': 1334, 'gritty': 1984, 'sci': 3864, 'lillian': 2600, 'dell': 1141, 'toxic': 4556, 'avenger': 309, 'troma': 4602, 'citizen': 770, 'poster': 3363, 'utter': 4725, 'router': 3782, 'discontinue': 1242, 'flush': 1763, 'carriage': 652, 'vitex': 4794, 'finance': 1709, 'eliminate': 1424, 'mild': 2829, 'acne': 36, 'moisturizer': 2872, 'facial': 1620, 'darker': 1074, 'touching': 4548, 'camping': 623, 'admire': 67, 'exuviance': 1614, 'avail': 307, 'vibrator': 4764, 'heinlein': 2085, 'motivate': 2904, 'fare': 1648, 'depiction': 1154, 'realism': 3579, 'pursue': 3503, 'hardy': 2044, 'rape': 3555, 'alec': 122, 'valley': 4730, 'motherhood': 2901, 'telling': 4410, 'slavery': 4057, 'prediction': 3390, 'michigan': 2820, 'couldnt': 974, 'scare': 3848, 'heartbreaking': 2075, 'monotonous': 2882, 'confront': 904, 'bike': 436, 'grandfather': 1964, 'viewing': 4771, 'bradley': 522, 'crawford': 997, 'outdoor': 3128, 'satire': 3832, 'juliet': 2445, 'sleeper': 4060, 'dismiss': 1260, 'cinematography': 765, 'regime': 3634, 'paranoid': 3186, 'sky': 4051, 'hendrix': 2094, 'odor': 3062, 'sf': 3949, 'employee': 1449, 'voyage': 4806, 'heater': 2077, 'chaos': 704, 'hopeful': 2154, 'operating': 3092, 'slot': 4071, 'sur': 4334, 'postcard': 3362, 'mt': 2918, 'pilot': 3287, 'accident': 21, 'dumber': 1357, 'gossip': 1950, 'barn': 352, 'nobel': 3007, 'bay': 373, 'attend': 284, 'hike': 2113, 'dharma': 1190, 'bud': 571, 'fame': 1638, 'contemplate': 928, 'overrated': 3146, 'hp': 2179, 'theology': 4453, 'shia': 3970, 'megan': 2789, 'fox': 1809, 'actress': 46, 'he': 2062, 'labeouf': 2499, 'ben': 418, 'provider': 3478, 'ep': 1492, 'optimus': 3101, 'freak': 1822, 'bluray': 477, 'mentality': 2801, 'continuity': 934, 'nonexistent': 3017, 'browser': 562, 'cgi': 695, 'jar': 2402, 'remake': 3659, 'procedure': 3437, 'bullet': 587, 'alter': 143, 'slam': 4053, 'dts': 1345, 'stupidity': 4283, 'blockbuster': 468, 'branch': 525, 'gb': 1886, 'jackson': 2394, 'syndrome': 4368, 'theatrical': 4451, 'alpha': 139, 'ticket': 4494, 'hockey': 2129, 'iphone': 2370, 'cement': 683, 'destruction': 1176, 'bruckheimer': 564, 'cowboy': 988, 'helicopter': 2086, 'violin': 4781, 'specie': 4150, 'decline': 1105, 'ie': 2213, 'epson': 1495, 'compatibility': 863, 'rambo': 3547, 'wwe': 4963, 'cena': 684, 'patrick': 3213, 'cringe': 1014, 'security': 3901, 'hogan': 2130, 'terminator': 4426, 'intricate': 2351, 'hiss': 2121, 'emarker': 1433, 'playlist': 3315, 'emarks': 1434, 'execution': 1571, 'terrifying': 4432, 'censor': 685, 'gammell': 1874, 'ti': 4492, 'compromise': 885, 'gruesome': 1992, 'horrify': 2163, 'helquist': 2091, 'scared': 3849, 'aloud': 138, 'mythology': 2941, 'rice': 3733, 'bellydance': 412, 'atea': 276, 'privacy': 3430, 'brando': 527, 'altitude': 147, 'trail': 4565, 'rugged': 3789, 'warmer': 4823, 'tongue': 4533, 'thinker': 4468, 'ralph': 3542, 'recognition': 3603, 'gabriel': 1866, 'cult': 1034, 'hound': 2172, 'ballet': 339, 'defense': 1117, 'predator': 3387, 'ryan': 3804, 'christopher': 755, 'officer': 3071, 'julie': 2444, 'silence': 4008, 'malfunction': 2711, 'douglas': 1308, 'genuine': 1902, 'brio': 551, 'sensor': 3918, 'automatic': 305, 'feeder': 1672, 'reset': 3696, 'manages': 2716, 'stewart': 4225, 'mellow': 2792, 'amnesia': 161, 'jude': 2440, 'tubthumping': 4612, 'lightning': 2591, 'gal': 1869, 'pitiful': 3296, 'arthritis': 247, 'earthquake': 1378, 'laser': 2521, 'misplace': 2856, 'artificial': 251, 'reminiscent': 3666, 'mule': 2924, 'gibson': 1911, 'oppose': 3096, 'seldon': 3907, 'isaac': 2380, 'spoiler': 4174, 'futuristic': 1862, 'defend': 1116, 'inaccuracy': 2253, 'unexpected': 4659, 'genesis': 1897, 'liking': 2597, 'wwi': 4964, 'hardback': 2038, 'carrot': 653, 'vacuum': 4728, 'sincerely': 4024, 'addiction': 58, 'nick': 2992, 'cf': 694, 'dentist': 1150, 'batman': 369, 'guinea': 2002, 'phase': 3260, 'mccartney': 2767, 'removable': 3670, 'ritter': 3749, 'joyce': 2439, 'janet': 2399, 'gay': 1885, 'external': 1608, 'microphone': 2822, 'charlotte': 714, 'britney': 553, 'spear': 4147, 'catholic': 672, 'philosophical': 3267, 'portrait': 3352, 'cancer': 626, 'sander': 3823, 'sensation': 3915, 'turtle': 4618, 'dystopian': 1367, 'stunt': 4281, 'aerial': 86, 'racist': 3530, 'pal': 3170, 'invisible': 2366, 'shakespeare': 3955, 'robin': 3757, 'rainy': 3540, 'craze': 999, 'crawl': 998, 'dinosaur': 1221, 'harness': 2048, 'homosexual': 2144, 'rashel': 3560, 'dominate': 1297, 'quinn': 3519, 'curie': 1040, 'prize': 3432, 'simpletech': 4016, 'mb': 2766, 'massacre': 2748, 'patti': 3215, 'evita': 1542, 'intex': 2349, 'inflate': 2284, 'airbed': 108, 'slept': 4062, 'deflate': 1126, 'comforter': 841, 'lump': 2681, 'xtra': 4970, 'flannel': 1737, 'fleetwood': 1746, 'rumour': 3792, 'mercedes': 2805, 'harmon': 2046, 'ford': 1784, 'passionate': 3203, 'cocktail': 815, 'jungle': 2450, 'oop': 3085, 'fonda': 1775, 'barbra': 348, 'rob': 3755, 'luke': 2680, 'mattel': 2758, 'kinsella': 2476, 'sophie': 4121, 'wickham': 4888, 'eby': 1387, 'romeo': 3772, 'spread': 4180, 'nurse': 3042, 'garcia': 1879, 'incest': 2257, 'yello': 4979, 'steiner': 4217, 'inventive': 2361, 'shirley': 3977, 'homosexuality': 2145, 'manson': 2721, 'bugliosi': 581, 'helter': 2092, 'skelter': 4043, 'stoner': 4240, 'tene': 4422, 'airplane': 110, 'dali': 1062, 'basement': 356, 'delonghi': 1142, 'ninety': 3004, 'batcave': 366, 'pci': 3220, 'clavell': 784, 'noni': 3018, 'nomad': 3013, 'recharge': 3600, 'knit': 2484, 'voodoo': 4804, 'nba': 2960, 'ritual': 3750, 'toefl': 4523, 'shift': 3971, 'civil': 772, 'earpiece': 1376, 'vegan': 4744, 'tina': 4511, 'wilderness': 4897, 'sd': 3885, 'sandisk': 3824, 'sansa': 3828, 'carnegie': 650, 'snack': 4083, 'advocate': 85, 'vincent': 4775, 'prosecutor': 3471, 'slasher': 4055, 'monk': 2879, 'collar': 823, 'dracula': 1316, 'flint': 1752, 'wireless': 4913, 'strauss': 4257, 'jabra': 2391, 'eargels': 1372, 'earbuds': 1371, 'jawbone': 2406, 'chuck': 757, 'clan': 776, 'swedish': 4358, 'odyssey': 3064, 'ian': 2203, 'misfortune': 2853, 'philadelphia': 3265, 'programmer': 3451, 'winston': 4909, 'moby': 2866, 'peck': 3225, 'ahab': 102, 'directing': 1225, 'damme': 1064, 'flea': 1745, 'frank': 1816, 'lackey': 2503, 'venice': 4751, 'tuscan': 4619, 'tuscany': 4620, 'communism': 853, 'rollerball': 3767, 'russell': 3797, 'megaman': 2788, 'chandler': 701, 'noir': 3010, 'scooter': 3870, 'pratchett': 3379, 'discworld': 1249, 'om': 3079, 'celiac': 680, 'gluten': 1931, 'amy': 167, 'usmle': 4720, 'anatomy': 171, 'freshman': 1831, 'dogg': 1291, 'gba': 1887, 'timothy': 4510, 'carter': 655, 'rebel': 3589, 'bowie': 512, 'holmes': 2138, 'confrontation': 905, 'sting': 4232, 'cummins': 1037, 'freud': 1832, 'organic': 3109, 'parable': 3181, 'vivitar': 4796, 'joan': 2424, 'palance': 3171, 'souljah': 4129, 'fw': 1864, 'childbirth': 736, 'birthing': 448, 'sheri': 3968, 'bayles': 374, 'argento': 234, 'statue': 4210, 'usher': 4719, 'auel': 295, 'ayla': 325, 'prehistoric': 3394, 'intellectually': 2327, 'neanderthal': 2961, 'lipstick': 2613, 'gamecube': 1871, 'limerick': 2601, 'astrology': 274, 'antivirus': 200, 'femalien': 1683, 'unrated': 4686, 'flyboys': 1766, 'lafayette': 2507, 'escadrille': 1507, 'dogfight': 1290, 'judith': 2442, 'hostel': 2169, 'bleak': 461, 'paced': 3158, 'bebel': 388, 'everest': 1530, 'gammelgaard': 1873, 'elmo': 1427, 'firefighter': 1719, 'csi': 1032, 'frm': 1840, 'garp': 1881, 'enrich': 1478, 'oceania': 3058, 'forbidden': 1782, 'totalitarian': 4544, 'newspeak': 2988, 'totalitarianism': 4545, 'burgess': 592, 'fundamentalist': 1855, 'concealer': 888, 'huppert': 2196, 'perverse': 3257, 'zeta': 4996, 'guinness': 2003, 'montag': 2885, 'fireman': 1720, 'farenheit': 1649, 'piper': 3292, 'fellowship': 1680, 'moria': 2895, 'rivendell': 3751, 'ati': 277, 'radeon': 3532, 'emily': 1438, 'pam': 3173, 'finnegans': 1717, 'finnegan': 1716, 'lapinator': 2515, 'hatebreed': 2055, 'halti': 2022, 'continuum': 936, 'musiq': 2934, 'lola': 2646, 'franka': 1817, 'tism': 4516, 'ziggy': 4997, 'stardust': 4201, 'nickelodeon': 2994, 'knot': 2487, 'liam': 2577, 'owen': 3153, 'neeson': 2971, 'lili': 2599, 'asvab': 275, 'goodman': 1941, 'cedar': 678, 'florette': 1757, 'manon': 2720, 'apache': 210, 'minolta': 2845, 'marquez': 2737, 'oprah': 3099, 'buendia': 576, 'macondo': 2691, 'java': 2404, 'canterbury': 631, 'chaucer': 720, 'pellegrino': 3231, 'coyote': 989, 'perabo': 3239, 'redgrave': 3618, 'warnes': 4827, 'ronson': 3773, 'tomcat': 4529, 'fraser': 1820, 'mckellen': 2768, 'brendan': 541, 'buffalo': 578, 'mosby': 2898, 'stacie': 4188, 'orrico': 3117, 'christina': 752, 'ry': 3803, 'carlton': 649, 'hopkins': 2156, 'lovebird': 2667, 'linksys': 2610, 'basset': 364, 'baskerville': 361, 'doyle': 1313, 'sherlock': 3969, 'baskervilles': 362, 'marlon': 2736, 'donati': 1299, 'claustrophobic': 783, 'ventriloquist': 4753}
+    
+
+Podemos imprimir diretamente os dados vetorizados para ver como fica
+
+> **Saída:** — 1: Número da linha de 'Train_X_Tfidf', 2: Número inteiro único de cada palavra na primeira linha, 3: Pontuação calculada pelo TF-IDF Vectorizer
+
+
+
+
+```python
+print(Train_X_Tfidf)
+```
+
+      (0, 4506)	0.37634188677099956
+      (0, 4505)	0.1502086671688917
+      (0, 3979)	0.35870975205557054
+      (0, 3894)	0.25152943577361386
+      (0, 3862)	0.2690840463105974
+      (0, 3746)	0.3469774999759746
+      (0, 3663)	0.28971770688512954
+      (0, 3571)	0.29440491517773787
+      (0, 2936)	0.22969709983777647
+      (0, 1940)	0.13398240399394393
+      (0, 1525)	0.17762585383071805
+      (0, 521)	0.3210759641783664
+      (0, 491)	0.1230432680090133
+      (0, 240)	0.24487094004433968
+      (1, 4692)	0.36974013511943044
+      (1, 4077)	0.6167222431544791
+      (1, 3441)	0.367922932130556
+      (1, 2593)	0.3755181501193181
+      (1, 1253)	0.3587203442870721
+      (1, 604)	0.27907786873623097
+      (2, 4739)	0.21254760778273238
+      (2, 4628)	0.17350284094477353
+      (2, 4466)	0.11900470145263356
+      (2, 4200)	0.13517671323243532
+      (2, 3854)	0.26661119879415307
+      :	:
+      (6998, 2522)	0.11515961575144278
+      (6998, 2125)	0.13654425766350872
+      (6998, 1972)	0.07125207506420554
+      (6998, 1789)	0.22020146972839663
+      (6998, 1753)	0.19941178219513117
+      (6998, 1715)	0.13513147046115875
+      (6998, 1586)	0.13525701911166826
+      (6998, 1569)	0.18526000673269852
+      (6998, 1535)	0.13390581538397145
+      (6998, 1529)	0.09892335052006009
+      (6998, 1300)	0.29581353575201946
+      (6998, 1187)	0.23294095312898008
+      (6998, 491)	0.36198328914552186
+      (6999, 4865)	0.1615538268993951
+      (6999, 4149)	0.5214461393910488
+      (6999, 3825)	0.3650731929929058
+      (6999, 2915)	0.16564844130065914
+      (6999, 2706)	0.14616444893293323
+      (6999, 1972)	0.14151361646369673
+      (6999, 1667)	0.28181666642579095
+      (6999, 1525)	0.1729761814925566
+      (6999, 1396)	0.2878202089401581
+      (6999, 1239)	0.3143423818550559
+      (6999, 320)	0.28507220106647935
+      (6999, 50)	0.357249400615048
+    
+
+Dessa forma, os conjuntos de dados estão prontos para serem alimentados em diferentes algoritmos de classificação.
+
+## Algoritmos de ML para prever o resultado
+### Naive Bayes
+
+
+
+```python
+# Classificador - Algoritmo - NB
+# ajuste o conjunto de dados de treinamento no classificador NB 
+Naive = naive_bayes.MultinomialNB() 
+Naive.fit(Train_X_Tfidf,Train_Y)
+# prever os rótulos no conjunto de dados de validação 
+predictions_NB = Naive.predict(Test_X_Tfidf)
+# Use a função precision_score para obter a precisão 
+print("Naive Bayes Accuracy Score -> ",accuracy_score(predictions_NB, Test_Y)*100)
+```
+
+    Naive Bayes Accuracy Score ->  83.26666666666667
+    
+
+### SVM
+
+
+```python
+# Classificador - Algoritmo - SVM 
+# ajusta o conjunto de dados de treinamento no classificador 
+SVM = svm.SVC(C=1.0, kernel='linear', degree=3, gamma='auto') 
+SVM.fit(Train_X_Tfidf,Train_Y)
+# prever os rótulos no conjunto de dados de validação 
+predictions_SVM = SVM.predict(Test_X_Tfidf)
+# Use a função precision_score para obter a precisão 
+print("SVM Accuracy Score -> ",accuracy_score(predictions_SVM, Test_Y)*100)
+```
+
+    SVM Accuracy Score ->  84.56666666666666
+    
+
+### Random Forest
+
+
+```python
+"""
+Com base na documentação do Scikilearn e dos algoritmos Naive Bayes e SVM apresentados em nossas aulas, codifique um classificador Random Forest 
+(consulte a documentação do Scikit-learn e tome como exemplo os classificadores Naive Bayes e SVM implementados no Notebook) e responda as seguintes questões:
+
+PERGUNTA 12
+Considerando os valores de (n_estimators = 10, random_state = 0) e o conjunto de treino e
+teste como 70/30, o Random Forest teve a sua acurácia prevista na faixa de qual porcentagem?
+
+PERGUNTA 13
+Considerando os valores de (n_estimators = 100, random_state = 0) e o conjunto de treino e teste como 80/20, 
+o Random Forest, Naive Bayes e SVM, em relação a acurácia obtida, marque a alternativa correta...
+
+PERGUNTA 14
+Considerando os valores de (n_estimators = 100, random_state = 0) e o conjunto de treino e teste como 80/20 
+em relação ao Random Forest, a seguinte afirmação está correta...
+
+PERGUNTA 15
+Pensando na perspectiva de melhoria dos modelos de Machine Learning, podemos avaliar o ajuste de hiper parâmetros, considerando as seguintes técnicas...
+
+
+PARA SE PENSAR...
+Como saber se o nosso modelo criado está generalizando de maneira adequada?
+
+- A base possui um tamanho adequado?
+- O classificador é adequado para o problema em questão?
+
+"""
+
+# Classificador - Algoritmo - RF
+# Needed for the next step in model parameter tuning
+Train_X, Test_X, Train_Y, Test_Y
+
+# random forest test
+# Instantiate classifier
+### SEU CODIGO AQUI ###
+
+# fit on training data
+### SEU CODIGO AQUI ###
+
+# prever os rótulos no conjunto de dados de validação 
+### SEU CODIGO AQUI ###
+
+# Use a função precision_score para obter a precisão 
+### SEU CODIGO AQUI ###
+
+# Seeing the metrics
+#print("Accuracy on training set: {:.3f}".format(forest.score(Train_X_Tfidf,Train_Y)))
+#print("Accuracy on test set: {:.3f}".format(forest.score(Test_X_Tfidf, Test_Y)))
+```
+
+
+```python
+'''PERGUNTA 12
+Considerando os valores de (n_estimators = 10, random_state = 0) e o conjunto de treino e
+teste como 70/30, o Random Forest teve a sua acurácia prevista na faixa de qual porcentagem?'''
+# Classificador - Algoritmo - Rando Forest 
+# ajusta o conjunto de dados de treinamento no classificador 
+RFC = RandomForestClassifier(n_estimators= 10, random_state= 0) 
+RFC.fit(Train_X_Tfidf,Train_Y)
+# prever os rótulos no conjunto de dados de validação 
+predictions_RFC = RFC.predict(Test_X_Tfidf)
+# Use a função precision_score para obter a precisão 
+print("RFC Accuracy Score -> ",accuracy_score(predictions_RFC, Test_Y)*100)
+```
+
+    RFC Accuracy Score ->  76.5
+    
+
+
+```python
+'''PERGUNTA 13
+Considerando os valores de (n_estimators = 100, random_state = 0) e o conjunto de treino e teste como 80/20, 
+o Random Forest, Naive Bayes e SVM, em relação a acurácia obtida, marque a alternativa correta...'''
+
+# Classificador - Algoritmo - Rando Forest 
+# ajusta o conjunto de dados de treinamento no classificador 
+RFC = RandomForestClassifier(n_estimators= 100, random_state= 0) 
+RFC.fit(Train_X_Tfidf,Train_Y)
+# prever os rótulos no conjunto de dados de validação 
+predictions_RFC = RFC.predict(Test_X_Tfidf)
+# Use a função precision_score para obter a precisão 
+print("RFC Accuracy Score -> ",accuracy_score(predictions_RFC, Test_Y)*100)
+```
+
+    RFC Accuracy Score ->  81.85
+    
+
+
+```python
+'''PERGUNTA 14
+Considerando os valores de (n_estimators = 100, random_state = 0) e o conjunto de treino e teste como 80/20 
+em relação ao Random Forest, a seguinte afirmação está correta...
+'''
+
+# O RF possui uma boa acurácia, mas pode ser melhorado com técnicas de otimização
+```
+
+
+```python
+'''PERGUNTA 15
+Pensando na perspectiva de melhoria dos modelos de Machine Learning, 
+podemos avaliar o ajuste de hiper parâmetros, considerando as seguintes técnicas...
+'''
+# Random Search, Grid Search, Cross Validation.
+
+```
+
+
+```python
+
+```
