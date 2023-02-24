@@ -25,7 +25,7 @@ após isso, iremos praticar alguns comandos no MongoDB.**
 
 # Atividades
 
-* **O primeiro passo é baixar o arquivo “books.json” do link: inserir o link**
+* **O primeiro passo é baixar o arquivo “books.json” do link: [books.json](https://github.com/Jcnok/Bootcamps_XPe/blob/main/Analista_BD/Projeto03/books.json)**
 * **Você precisará criar um database chamado “aula”.**
 * **Você precisará criar uma collection chamada “livros”.**
 * **Vamos carregar o arquivo books.json na collection “livros”.**
