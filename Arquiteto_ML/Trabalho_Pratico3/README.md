@@ -27,9 +27,8 @@ ambiente de desenvolvimento em Python.**
 
 **a. Uma função que calcula a distância euclidiana entre dois vetores x e
 y:**
-\begin{equation}
-d(x,y) = \sqrt{\sum_{i=1}^{n}(x_i - y_i)^2}=\left\Vert \mathbf{x} - \mathbf{y} \right\Vert2
-\end{equation}
+
+$$\begin{equation}d(x,y) = \sqrt{\sum_{i=1}^{n}(x_i - y_i)^2}=\left\Vert \mathbf{x} - \mathbf{y} \right\Vert2\end{equation}$$
 
 * **Essa fórmula utiliza a diferença entre os valores de cada dimensão dos vetores, elevados ao quadrado, somados e depois tirada a raiz quadrada dessa soma. O resultado é a distância Euclidiana entre os vetores 𝑥 e 𝑦.**
 
@@ -61,9 +60,9 @@ print(f"A distância euclidiana entre os vetores x e y : {distance}")
 
 **b. Uma função que calcula a distância de Hamming (quantidade de posições distintas) entre dois vetores binários n-dimensionais x e y:**
 
-\begin{equation}
+**$$\begin{equation}
 h(x,y) = \sum_{i=1}^{n} |x_i - y_i|
-\end{equation}
+\end{equation}$$**
 
 
 
@@ -108,9 +107,9 @@ print(f"A distância de Hamming entre x e y é:{dist}")
 (quantidade de posições distintas dividida pela dimensão dos vetores)
 entre dois vetores binários n-dimensionais x e y:**
 
-\begin{equation}
+$$\begin{equation}
 d_{norm}(x,y) = \frac{1}{n}\sum_{i=1}^{n} |x_i - y_i|
-\end{equation}
+\end{equation}$$
 
 
 ```python
@@ -154,9 +153,9 @@ print(f"A distância de Hamming Normalizada entre x e y é:{dist_norm}")
 Uma função para calcular a similaridade de cossenos entre dois vetores
 n-dimensionais x e y:
 
-\begin{equation}
+$$\begin{equation}
 \cos(x,y) = \frac{\mathbf{x} \cdot \mathbf{y}}{\left\Vert \mathbf{x} \right\Vert \left\Vert \mathbf{y} \right\Vert} = \frac{\sum_{i=1}^{n} x_i y_i}{\sqrt{\sum_{i=1}^{n} x_i^2}\sqrt{\sum_{i=1}^{n} y_i^2}}
-\end{equation}
+\end{equation}$$
 
 
 ```python
