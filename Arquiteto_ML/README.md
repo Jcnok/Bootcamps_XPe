@@ -7,4 +7,4 @@
 * **[Trabalho prático módulo 3](https://github.com/Jcnok/Bootcamps_XPe/tree/main/Arquiteto_ML/Trabalho_Pratico3#bootcamp-xpe-arquiteto-de-machine-learning)**
 * **[Desafio 3](https://github.com/Jcnok/Bootcamps_XPe/tree/main/Arquiteto_ML/desafio03#bootcamp-xpe-arquiteto-de-machine-learning)**
 * **[Trabalho prático módulo 4](https://github.com/Jcnok/Bootcamps_XPe/blob/main/Arquiteto_ML/Trabalho_Pratico4/README.md#bootcamp-arquitetoa-de-machine-learning)**
-* **[Desafio 4](https://github.com/Jcnok/Bootcamps_XPe/tree/main/Arquiteto_ML/Desafio4#bootcamp-arquitetoa-de-machine-learning)
+* **[Desafio 4](https://github.com/Jcnok/Bootcamps_XPe/tree/main/Arquiteto_ML/Desafio4#bootcamp-arquitetoa-de-machine-learning)**
