@@ -14,4 +14,7 @@
 [Trabalho Prático - Módulo 03](https://github.com/Jcnok/Bootcamps_XPe/blob/main/Analista_BD/Projeto03/README.md#bootcamp-analista-de-banco-de-dados----trabalho-pr%C3%A1tico-do-m%C3%B3dulo-03)
 
 ### Desafio Prático Módulo 03:
-[Desafio Prátio - Módulo 03](https://github.com/Jcnok/Bootcamps_XPe/tree/main/Analista_BD/desafio03#bootcamp-analista-de-banco-de-dados----desafio-do-m%C3%B3dulo-03)
+[Desafio Prático - Módulo 03](https://github.com/Jcnok/Bootcamps_XPe/tree/main/Analista_BD/desafio03#bootcamp-analista-de-banco-de-dados----desafio-do-m%C3%B3dulo-03)
+
+### Desafio Prático Módulo 04:
+[Desafio Prático - Módulo 04](https://github.com/Jcnok/Bootcamps_XPe/tree/main/Analista_BD/desafio04#bootcamp-analista-de-banco-de-dados----desafio-do-m%C3%B3dulo-4)
