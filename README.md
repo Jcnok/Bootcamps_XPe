@@ -17,7 +17,7 @@
     <img src="imagens\azure_cloud.svg" title="Azure Cloud Computing" width="150" height="150">
   </a> 
   <a href="https://github.com/Jcnok/Bootcamps_XPe/tree/main/Analista_BD/Projeto01#bootcamp-analista-de-banco-de-dados">
-    <img src="imagens\eng_ml1.svg" title="Engenheiro de Machine Learning" width="130" height="130">
+    <img src="imagens\engenheiro_ML.svg" title="Engenheiro de Machine Learning" width="130" height="130">
   </a>
 </div>
 
